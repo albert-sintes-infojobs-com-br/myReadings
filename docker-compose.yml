@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: myreadings-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: myreadings
+      MARIADB_USER: myreadings
+      MARIADB_PASSWORD: myreadings
+    ports:
+      - "13306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: myreadings-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.example
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: myreadings-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4173:80"
+
+volumes:
+  db_data:

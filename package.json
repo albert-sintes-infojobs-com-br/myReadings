@@ -1,0 +1,24 @@
+{
+  "name": "myreadings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MyReadings - gestión de libros/lecturas con recompensas familiares",
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspaces --if-present",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true,
+    "prisma@5.22.0": true
+  }
+}

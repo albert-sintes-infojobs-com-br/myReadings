@@ -1,0 +1,1653 @@
+openapi: 3.0.3
+info:
+  title: MyReadings API
+  description: >
+    API REST de MyReadings: gestión de lecturas familiares con sistema de
+    recompensas. Roles PARENT (padre/madre) y CHILD (hijo/a). Todos los
+    endpoints salvo `/auth/register` y `/auth/login` requieren JWT
+    (`Authorization: Bearer <token>`).
+  version: "1.0.0"
+  contact:
+    name: MyReadings (TFM)
+servers:
+  - url: http://localhost:3000/api
+    description: Desarrollo local
+  - url: /api
+    description: Relativo (mismo host que el frontend)
+
+tags:
+  - name: auth
+    description: Registro, login y sesión
+  - name: users
+    description: Gestión de cuentas hijo por el padre
+  - name: categories
+    description: Categorías de lectura
+  - name: books
+    description: Libros y su ciclo de estado
+  - name: goals
+    description: Metas canjeables
+  - name: rewards
+    description: Recompensas asociadas a libros
+  - name: reward-requests
+    description: Solicitudes de recompensa (hijo → padre)
+  - name: notifications
+    description: Bandeja de notificaciones in-app
+  - name: ledger
+    description: Saldo de puntos/euros
+  - name: stats
+    description: Estadísticas y dashboards
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ─────────────────────────── AUTH ───────────────────────────
+  /auth/register:
+    post:
+      tags: [auth]
+      summary: Registro de un padre/madre
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Padre/madre registrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login (padre o hijo)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Perfil del usuario autenticado
+      responses:
+        "200":
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─────────────────────────── USERS (children) ───────────────────────────
+  /users/me:
+    get:
+      tags: [users]
+      summary: Sesión actual (alias de /auth/me)
+      responses:
+        "200":
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/children:
+    get:
+      tags: [users]
+      summary: Listar hijos del padre autenticado
+      description: Solo rol PARENT.
+      responses:
+        "200":
+          description: Lista de hijos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SafeUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [users]
+      summary: Crear una cuenta hijo
+      description: Solo rol PARENT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChildRequest"
+      responses:
+        "201":
+          description: Hijo creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /users/children/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      tags: [users]
+      summary: Detalle de un hijo
+      description: Solo rol PARENT; el hijo debe ser suyo.
+      responses:
+        "200":
+          description: Hijo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [users]
+      summary: Editar datos de un hijo
+      description: Solo rol PARENT; el hijo debe ser suyo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChildRequest"
+      responses:
+        "200":
+          description: Hijo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafeUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [users]
+      summary: Eliminar cuenta hijo
+      description: Solo rol PARENT; el hijo debe ser suyo.
+      responses:
+        "204":
+          description: Eliminado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────── CATEGORIES ───────────────────────────
+  /categories:
+    get:
+      tags: [categories]
+      summary: Listar categorías visibles
+      description: >
+        Devuelve las categorías propias. Si el usuario es CHILD, incluye
+        además (en modo solo-lectura) las categorías de su padre.
+      responses:
+        "200":
+          description: Lista de categorías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [categories]
+      summary: Crear una categoría propia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Categoría creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      tags: [categories]
+      summary: Categoría por id
+      description: Propia, o del padre si el actor es CHILD.
+      responses:
+        "200":
+          description: Categoría
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [categories]
+      summary: Actualizar una categoría (solo propietario)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Categoría actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [categories]
+      summary: Eliminar una categoría (solo propietario)
+      description: 409 si la categoría todavía tiene libros asociados.
+      responses:
+        "204":
+          description: Eliminada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ─────────────────────────── BOOKS ───────────────────────────
+  /books:
+    get:
+      tags: [books]
+      summary: Listar libros propios
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/BookStatus"
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de libros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [books]
+      summary: Crear un libro propio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookRequest"
+      responses:
+        "201":
+          description: Libro creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /books/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      tags: [books]
+      summary: Detalle de un libro propio
+      responses:
+        "200":
+          description: Libro
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [books]
+      summary: Editar un libro / cambiar de estado
+      description: "Validación: `endDate >= startDate` cuando ambas existen."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookRequest"
+      responses:
+        "200":
+          description: Libro actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [books]
+      summary: Eliminar un libro propio
+      responses:
+        "204":
+          description: Eliminado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /books/{id}/request-reward:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    post:
+      tags: [books]
+      summary: Solicitar recompensa sobre un libro (hijo)
+      description: >
+        Solo CHILD, sobre libro propio en estado `NOT_STARTED`. Crea un
+        `RewardRequest` (PENDING) y una `Notification` `REWARD_REQUEST`
+        al padre.
+      responses:
+        "201":
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────── GOALS ───────────────────────────
+  /children/{childId}/goals:
+    parameters:
+      - name: childId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [goals]
+      summary: Listar metas de un hijo
+      description: Solo PARENT; el hijo debe ser suyo.
+      responses:
+        "200":
+          description: Metas del hijo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [goals]
+      summary: Crear una meta para un hijo
+      description: Solo PARENT; el hijo debe ser suyo; `targetPoints > 0`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalRequest"
+      responses:
+        "201":
+          description: Meta creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /goals/mine:
+    get:
+      tags: [goals]
+      summary: Mis metas y progreso (hijo)
+      responses:
+        "200":
+          description: Lista de metas propias con progreso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GoalWithProgress"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /goals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    patch:
+      tags: [goals]
+      summary: Editar una meta
+      description: Solo PARENT; el hijo debe ser suyo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalRequest"
+      responses:
+        "200":
+          description: Meta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [goals]
+      summary: Eliminar una meta
+      description: Solo PARENT; hijo propio; sin puntos comprometidos.
+      responses:
+        "204":
+          description: Eliminada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /goals/{id}/redeem:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    post:
+      tags: [goals]
+      summary: Canjear una meta alcanzada
+      description: Solo PARENT; la meta debe estar en estado `ACHIEVED`.
+      responses:
+        "200":
+          description: Meta canjeada (REDEEMED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ─────────────────────────── REWARDS ───────────────────────────
+  /books/{bookId}/rewards:
+    parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags: [rewards]
+      summary: Crear una recompensa sobre un libro
+      description: >
+        Solo PARENT; libro `NOT_STARTED`; hijo propio; `deadline` futura;
+        `goalId` obligatorio si `type = POINTS`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRewardRequest"
+      responses:
+        "201":
+          description: Recompensa creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reward"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /rewards:
+    get:
+      tags: [rewards]
+      summary: Listar recompensas
+      description: Padre ve las de sus hijos; hijo ve las suyas.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/RewardStatus"
+      responses:
+        "200":
+          description: Lista de recompensas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reward"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /rewards/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      tags: [rewards]
+      summary: Detalle de una recompensa
+      responses:
+        "200":
+          description: Recompensa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reward"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [rewards]
+      summary: Editar una recompensa
+      description: Solo PARENT; el libro debe seguir `NOT_STARTED`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRewardRequest"
+      responses:
+        "200":
+          description: Recompensa actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reward"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [rewards]
+      summary: Eliminar una recompensa
+      description: Solo PARENT; el libro debe seguir `NOT_STARTED`.
+      responses:
+        "204":
+          description: Eliminada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────── REWARD REQUESTS ───────────────────────────
+  /reward-requests:
+    get:
+      tags: [reward-requests]
+      summary: Listar solicitudes pendientes de mis hijos
+      description: Solo PARENT.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/RewardRequestStatus"
+      responses:
+        "200":
+          description: Lista de solicitudes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RewardRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /reward-requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    patch:
+      tags: [reward-requests]
+      summary: Resolver o descartar una solicitud
+      description: Solo PARENT; debe ser de un hijo suyo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveRewardRequestRequest"
+      responses:
+        "200":
+          description: Solicitud actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────── NOTIFICATIONS ───────────────────────────
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: Listar notificaciones propias
+      parameters:
+        - name: read
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por leídas/no leídas
+      responses:
+        "200":
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/unread-count:
+    get:
+      tags: [notifications]
+      summary: Número de notificaciones no leídas
+      responses:
+        "200":
+          description: Contador
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{id}/read:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    patch:
+      tags: [notifications]
+      summary: Marcar una notificación como leída
+      responses:
+        "200":
+          description: Notificación actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /notifications/read-all:
+    patch:
+      tags: [notifications]
+      summary: Marcar todas las notificaciones propias como leídas
+      responses:
+        "200":
+          description: Notificaciones actualizadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                    example: 5
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─────────────────────────── LEDGER ───────────────────────────
+  /ledger/balance:
+    get:
+      tags: [ledger]
+      summary: Saldo propio (puntos y euros)
+      description: Solo CHILD.
+      responses:
+        "200":
+          description: Saldo actual
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Balance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /children/{childId}/ledger:
+    parameters:
+      - name: childId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [ledger]
+      summary: Movimientos y saldo de un hijo
+      description: Solo PARENT; el hijo debe ser suyo.
+      responses:
+        "200":
+          description: Ledger del hijo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    $ref: "#/components/schemas/Balance"
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LedgerEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─────────────────────────── STATS ───────────────────────────
+  /stats/me:
+    get:
+      tags: [stats]
+      summary: Estadísticas del propio hijo
+      description: Solo CHILD.
+      responses:
+        "200":
+          description: Estadísticas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /stats/overview:
+    get:
+      tags: [stats]
+      summary: Estadísticas agregadas (padre)
+      description: >
+        Solo PARENT. Sin `childId` agrega todos sus hijos e incluye
+        ranking; con `childId` filtra a ese hijo.
+      parameters:
+        - name: childId
+          in: query
+          schema:
+            type: integer
+          description: Opcional, filtra a un hijo concreto (debe ser propio)
+      responses:
+        "200":
+          description: Estadísticas agregadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+
+  responses:
+    BadRequest:
+      description: Validación de datos fallida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Token ausente o inválido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Rol o propiedad insuficiente
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Conflicto (email duplicado, meta ya canjeada, categoría con libros, etc.)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example: "El color debe ser un hex #RRGGBB"
+        error:
+          type: string
+          example: "Bad Request"
+
+    Role:
+      type: string
+      enum: [PARENT, CHILD]
+
+    BookStatus:
+      type: string
+      enum: [NOT_STARTED, READING, FINISHED]
+
+    GoalStatus:
+      type: string
+      enum: [ACTIVE, ACHIEVED, REDEEMED]
+
+    RewardType:
+      type: string
+      enum: [POINTS, MONEY]
+
+    RewardStatus:
+      type: string
+      enum: [PENDING, FULFILLED, PENALIZED]
+
+    RewardRequestStatus:
+      type: string
+      enum: [PENDING, RESOLVED, DISMISSED]
+
+    NotificationType:
+      type: string
+      enum: [REWARD_REQUEST, REWARD_FULFILLED, REWARD_PENALIZED, GOAL_ACHIEVED]
+
+    LedgerKind:
+      type: string
+      enum: [POINTS, MONEY]
+
+    LedgerReason:
+      type: string
+      enum: [FULFILLED, PENALTY, REDEMPTION]
+
+    # ---------- Auth / Users ----------
+    SafeUser:
+      type: object
+      description: Proyección de usuario sin `passwordHash`.
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "María García"
+        email:
+          type: string
+          format: email
+          example: "maria@familia.dev"
+        role:
+          $ref: "#/components/schemas/Role"
+        parentId:
+          type: integer
+          nullable: true
+          example: null
+      required: [id, name, email, role, parentId]
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "María García"
+        email:
+          type: string
+          format: email
+          example: "maria@familia.dev"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+          example: "password123"
+      required: [name, email, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "maria@familia.dev"
+        password:
+          type: string
+          format: password
+          example: "password123"
+      required: [email, password]
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: "#/components/schemas/SafeUser"
+      required: [accessToken, user]
+
+    CreateChildRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          example: "Lola"
+        email:
+          type: string
+          format: email
+          example: "lola@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+          example: "clave123"
+      required: [name, email, password]
+
+    UpdateChildRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+
+    # ---------- Categories ----------
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        ownerUserId:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Ciencia ficción"
+        description:
+          type: string
+          nullable: true
+          example: "Novela SF y fantasía"
+        colorHex:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+          example: "#1E88E5"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, ownerUserId, title, colorHex, createdAt]
+
+    CreateCategoryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: "Ciencia ficción"
+        colorHex:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+          example: "#1E88E5"
+        description:
+          type: string
+          maxLength: 500
+          example: "Novela SF y fantasía"
+      required: [title, colorHex]
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        colorHex:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        description:
+          type: string
+          maxLength: 500
+
+    # ---------- Books ----------
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        ownerUserId:
+          type: integer
+          example: 2
+        title:
+          type: string
+          example: "Dune"
+        author:
+          type: string
+          example: "Frank Herbert"
+        status:
+          $ref: "#/components/schemas/BookStatus"
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+        categoryId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, ownerUserId, title, author, status, createdAt, updatedAt]
+
+    CreateBookRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Dune"
+        author:
+          type: string
+          example: "Frank Herbert"
+        status:
+          $ref: "#/components/schemas/BookStatus"
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+        categoryId:
+          type: integer
+          nullable: true
+      required: [title, author]
+
+    UpdateBookRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        status:
+          $ref: "#/components/schemas/BookStatus"
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        rating:
+          type: integer
+          minimum: 0
+          maximum: 5
+          nullable: true
+        categoryId:
+          type: integer
+          nullable: true
+
+    # ---------- Goals ----------
+    Goal:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        childId:
+          type: integer
+          example: 2
+        createdByParentId:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "PlayStation"
+        description:
+          type: string
+          nullable: true
+        targetPoints:
+          type: integer
+          minimum: 1
+          example: 1000
+        status:
+          $ref: "#/components/schemas/GoalStatus"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, childId, createdByParentId, name, targetPoints, status, createdAt]
+
+    GoalWithProgress:
+      allOf:
+        - $ref: "#/components/schemas/Goal"
+        - type: object
+          properties:
+            pointsAccumulated:
+              type: integer
+              example: 450
+            progressPct:
+              type: number
+              format: float
+              example: 45.0
+
+    CreateGoalRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "PlayStation"
+        description:
+          type: string
+        targetPoints:
+          type: integer
+          minimum: 1
+          example: 1000
+      required: [name, targetPoints]
+
+    UpdateGoalRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        targetPoints:
+          type: integer
+          minimum: 1
+
+    # ---------- Rewards ----------
+    Reward:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        bookId:
+          type: integer
+          example: 10
+        createdByParentId:
+          type: integer
+          example: 1
+        type:
+          $ref: "#/components/schemas/RewardType"
+        value:
+          type: number
+          format: double
+          example: 50
+        deadline:
+          type: string
+          format: date
+        penaltyValue:
+          type: number
+          format: double
+          nullable: true
+        goalId:
+          type: integer
+          nullable: true
+        status:
+          $ref: "#/components/schemas/RewardStatus"
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, bookId, createdByParentId, type, value, deadline, status, createdAt]
+
+    CreateRewardRequest:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/RewardType"
+        value:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          example: 50
+        deadline:
+          type: string
+          format: date
+          description: Debe ser una fecha futura
+        penaltyValue:
+          type: number
+          format: double
+          nullable: true
+        goalId:
+          type: integer
+          nullable: true
+          description: Obligatorio si `type = POINTS`
+      required: [type, value, deadline]
+
+    UpdateRewardRequest:
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+        deadline:
+          type: string
+          format: date
+        penaltyValue:
+          type: number
+          format: double
+          nullable: true
+        goalId:
+          type: integer
+          nullable: true
+
+    # ---------- RewardRequest ----------
+    RewardRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 4
+        bookId:
+          type: integer
+          example: 10
+        childId:
+          type: integer
+          example: 2
+        status:
+          $ref: "#/components/schemas/RewardRequestStatus"
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, bookId, childId, status, createdAt]
+
+    ResolveRewardRequestRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [RESOLVED, DISMISSED]
+      required: [status]
+
+    # ---------- Notifications ----------
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        recipientUserId:
+          type: integer
+          example: 1
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        refBookId:
+          type: integer
+          nullable: true
+        refRewardId:
+          type: integer
+          nullable: true
+        message:
+          type: string
+          example: "recompensa pendiente de activar"
+        read:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, recipientUserId, type, message, read, createdAt]
+
+    # ---------- Ledger ----------
+    LedgerEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 20
+        childId:
+          type: integer
+          example: 2
+        rewardId:
+          type: integer
+          nullable: true
+        kind:
+          $ref: "#/components/schemas/LedgerKind"
+        amount:
+          type: number
+          format: double
+          example: 50
+        goalId:
+          type: integer
+          nullable: true
+        reason:
+          $ref: "#/components/schemas/LedgerReason"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, childId, kind, amount, reason, createdAt]
+
+    Balance:
+      type: object
+      properties:
+        points:
+          type: integer
+          example: 450
+        money:
+          type: number
+          format: double
+          example: 12.5
+      required: [points, money]
+
+    # ---------- Stats ----------
+    BooksByStatus:
+      type: object
+      properties:
+        NOT_STARTED:
+          type: integer
+          example: 2
+        READING:
+          type: integer
+          example: 1
+        FINISHED:
+          type: integer
+          example: 6
+
+    RewardsByStatus:
+      type: object
+      properties:
+        PENDING:
+          type: integer
+          example: 1
+        FULFILLED:
+          type: integer
+          example: 3
+        PENALIZED:
+          type: integer
+          example: 1
+
+    FinishedBooksByPeriod:
+      type: object
+      properties:
+        year:
+          type: integer
+          example: 2026
+        month:
+          type: integer
+          example: 9
+        count:
+          type: integer
+          example: 2
+      required: [year, month, count]
+
+    GoalProgressSummary:
+      type: object
+      properties:
+        goalId:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: "PlayStation"
+        targetPoints:
+          type: integer
+          example: 1000
+        pointsAccumulated:
+          type: integer
+          example: 450
+        progressPct:
+          type: number
+          format: float
+          example: 45.0
+      required: [goalId, name, targetPoints, pointsAccumulated, progressPct]
+
+    ChildStats:
+      type: object
+      properties:
+        booksByStatus:
+          $ref: "#/components/schemas/BooksByStatus"
+        finishedBooksByPeriod:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinishedBooksByPeriod"
+        balance:
+          $ref: "#/components/schemas/Balance"
+        goalsProgress:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoalProgressSummary"
+        rewardsByStatus:
+          $ref: "#/components/schemas/RewardsByStatus"
+        avgReadingDays:
+          type: number
+          format: float
+          nullable: true
+          example: 12.5
+
+    ChildRankingEntry:
+      type: object
+      properties:
+        childId:
+          type: integer
+          example: 2
+        name:
+          type: string
+          example: "Lucas García"
+        finishedBooks:
+          type: integer
+          example: 6
+        balance:
+          $ref: "#/components/schemas/Balance"
+
+    OverviewStats:
+      type: object
+      description: >
+        Si se filtra por `childId`, `perChild` contiene una única entrada
+        y `ranking` se omite; sin `childId` agrega todos los hijos.
+      properties:
+        perChild:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  childId:
+                    type: integer
+                  name:
+                    type: string
+              - $ref: "#/components/schemas/ChildStats"
+        ranking:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChildRankingEntry"

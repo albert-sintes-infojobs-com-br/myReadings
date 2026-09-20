@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PARENT
+  CHILD
+}
+
+enum BookStatus {
+  NOT_STARTED
+  READING
+  FINISHED
+}
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  REDEEMED
+}
+
+enum RewardType {
+  POINTS
+  MONEY
+}
+
+enum RewardStatus {
+  PENDING
+  FULFILLED
+  PENALIZED
+}
+
+enum RequestStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  REWARD_REQUEST
+  REWARD_FULFILLED
+  REWARD_PENALIZED
+  GOAL_ACHIEVED
+}
+
+enum LedgerKind {
+  POINTS
+  MONEY
+}
+
+enum LedgerReason {
+  FULFILLED
+  PENALTY
+  REDEMPTION
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  parentId     Int?
+  parent       User?    @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children     User[]   @relation("ParentChild")
+
+  categories    Category[]
+  ownedBooks    Book[]     @relation("BookOwner")
+  createdGoals  Goal[]     @relation("GoalCreatedBy")
+  goals         Goal[]     @relation("GoalChild")
+  createdRewards Reward[]  @relation("RewardCreatedBy")
+  rewardRequests RewardRequest[]
+  notifications Notification[] @relation("NotificationRecipient")
+  ledgerEntries LedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  ownerUserId Int
+  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  colorHex    String @db.VarChar(10)
+  books       Book[]
+  createdAt   DateTime @default(now())
+
+  @@map("categories")
+}
+
+model Book {
+  id          Int        @id @default(autoincrement())
+  ownerUserId Int
+  owner       User       @relation("BookOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  title       String
+  author      String
+  status      BookStatus @default(NOT_STARTED)
+  startDate   DateTime?  @db.Date
+  endDate     DateTime?  @db.Date
+  notes       String?
+  rating      Int?
+  categoryId  Int?
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  rewards     Reward[]
+  rewardRequests RewardRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("books")
+}
+
+model Goal {
+  id                Int        @id @default(autoincrement())
+  childId           Int
+  child             User       @relation("GoalChild", fields: [childId], references: [id], onDelete: Cascade)
+  createdByParentId Int
+  createdByParent   User       @relation("GoalCreatedBy", fields: [createdByParentId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  targetPoints      Int
+  status            GoalStatus @default(ACTIVE)
+  rewards           Reward[]
+  ledgerEntries     LedgerEntry[]
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@map("goals")
+}
+
+model Reward {
+  id                Int          @id @default(autoincrement())
+  bookId            Int
+  book              Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdByParentId Int
+  createdByParent   User         @relation("RewardCreatedBy", fields: [createdByParentId], references: [id], onDelete: Cascade)
+  type              RewardType
+  value             Decimal      @db.Decimal(12, 2)
+  deadline          DateTime     @db.Date
+  penaltyValue      Decimal?     @db.Decimal(12, 2)
+  goalId            Int?
+  goal              Goal?        @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  status            RewardStatus @default(PENDING)
+  resolvedAt        DateTime?
+  ledgerEntries     LedgerEntry[]
+  notifications     Notification[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("rewards")
+}
+
+model RewardRequest {
+  id         Int           @id @default(autoincrement())
+  bookId     Int
+  book       Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  childId    Int
+  child      User          @relation(fields: [childId], references: [id], onDelete: Cascade)
+  status     RequestStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  resolvedAt DateTime?
+
+  @@map("reward_requests")
+}
+
+model Notification {
+  id              Int              @id @default(autoincrement())
+  recipientUserId Int
+  recipient       User             @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  refBookId       Int?
+  refRewardId     Int?
+  refReward       Reward?          @relation(fields: [refRewardId], references: [id], onDelete: SetNull)
+  message         String
+  read            Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model LedgerEntry {
+  id       Int          @id @default(autoincrement())
+  childId  Int
+  child    User         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  rewardId Int?
+  reward   Reward?      @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  kind     LedgerKind
+  amount   Decimal      @db.Decimal(14, 2)
+  goalId   Int?
+  goal     Goal?        @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  reason   LedgerReason
+  createdAt DateTime     @default(now())
+
+  @@map("ledger_entries")
+}

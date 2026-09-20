@@ -1,0 +1,236 @@
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Alert,
+  Box,
+  Button,
+  MenuItem,
+  Paper,
+  Rating,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AppLayout from '../components/layout/AppLayout';
+import { useAuth } from '../auth/AuthContext';
+import { deleteBook, getBook, requestReward, updateBook, type BookInput } from '../api/books.api';
+import { listCategories } from '../api/categories.api';
+import type { BookStatus } from '../types/book';
+
+const STATUS_OPTIONS: Record<BookStatus, BookStatus[]> = {
+  NOT_STARTED: ['NOT_STARTED', 'READING', 'FINISHED'],
+  READING: ['READING', 'FINISHED'],
+  FINISHED: ['FINISHED'],
+};
+
+const STATUS_LABEL: Record<BookStatus, string> = {
+  NOT_STARTED: 'Sin empezar',
+  READING: 'Leyendo',
+  FINISHED: 'Terminado',
+};
+
+export default function BookDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const bookId = Number(id);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<BookInput | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const bookQuery = useQuery({ queryKey: ['books', bookId], queryFn: () => getBook(bookId) });
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: listCategories });
+
+  useEffect(() => {
+    if (bookQuery.data) {
+      const b = bookQuery.data;
+      setForm({
+        title: b.title,
+        author: b.author,
+        status: b.status,
+        startDate: b.startDate ?? '',
+        endDate: b.endDate ?? '',
+        notes: b.notes ?? '',
+        rating: b.rating ?? undefined,
+        categoryId: b.categoryId ?? undefined,
+      });
+    }
+  }, [bookQuery.data]);
+
+  const updateMutation = useMutation({
+    mutationFn: (input: Partial<BookInput>) => updateBook(bookId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+      setError(null);
+      setInfo('Cambios guardados');
+    },
+    onError: (err) => {
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setError(typeof message === 'string' ? message : 'No se pudo guardar el libro');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteBook(bookId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+      navigate('/books', { replace: true });
+    },
+  });
+
+  const requestRewardMutation = useMutation({
+    mutationFn: () => requestReward(bookId),
+    onSuccess: () => setInfo('Solicitud enviada a tu padre/madre'),
+    onError: (err) => {
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setError(typeof message === 'string' ? message : 'No se pudo enviar la solicitud');
+    },
+  });
+
+  if (bookQuery.isLoading || !form) {
+    return (
+      <AppLayout>
+        <Typography>Cargando…</Typography>
+      </AppLayout>
+    );
+  }
+  if (bookQuery.isError) {
+    return (
+      <AppLayout>
+        <Alert severity="error">No se encontró el libro.</Alert>
+      </AppLayout>
+    );
+  }
+
+  const book = bookQuery.data!;
+  const categories = categoriesQuery.data ?? [];
+  const canRequestReward = user?.role === 'CHILD' && book.status === 'NOT_STARTED';
+
+  function handleSave() {
+    setError(null);
+    setInfo(null);
+    updateMutation.mutate({
+      title: form!.title,
+      author: form!.author,
+      status: form!.status,
+      startDate: form!.startDate || undefined,
+      endDate: form!.endDate || undefined,
+      notes: form!.notes || undefined,
+      rating: form!.rating,
+      categoryId: form!.categoryId,
+    });
+  }
+
+  function handleDelete() {
+    if (!window.confirm(`¿Eliminar el libro "${book.title}"?`)) return;
+    deleteMutation.mutate();
+  }
+
+  return (
+    <AppLayout>
+      <Stack spacing={2}>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h5">{book.title}</Typography>
+          <Button color="error" onClick={handleDelete}>
+            Eliminar
+          </Button>
+        </Box>
+        {error && <Alert severity="error">{error}</Alert>}
+        {info && <Alert severity="success">{info}</Alert>}
+        {book.status === 'NOT_STARTED' && user?.role === 'CHILD' && (
+          <Alert severity="info">
+            Si empiezas a leer este libro perderás la opción de solicitar una recompensa asociada.
+          </Alert>
+        )}
+        <Paper sx={{ p: 3 }}>
+          <Stack spacing={2} maxWidth={480}>
+            <TextField
+              label="Título"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+            <TextField
+              label="Autor"
+              value={form.author}
+              onChange={(e) => setForm({ ...form, author: e.target.value })}
+            />
+            <TextField
+              select
+              label="Estado"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as BookStatus })}
+            >
+              {STATUS_OPTIONS[book.status].map((status) => (
+                <MenuItem key={status} value={status}>
+                  {STATUS_LABEL[status]}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Categoría"
+              value={form.categoryId ?? ''}
+              onChange={(e) =>
+                setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })
+              }
+            >
+              <MenuItem value="">Sin categoría</MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.title}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Fecha de inicio"
+              type="date"
+              value={form.startDate ?? ''}
+              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Fecha de fin"
+              type="date"
+              value={form.endDate ?? ''}
+              onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Notas"
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              multiline
+              minRows={2}
+            />
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                Valoración
+              </Typography>
+              <Rating
+                value={form.rating ?? 0}
+                onChange={(_, value) => setForm({ ...form, rating: value ?? undefined })}
+              />
+            </Box>
+            <Stack direction="row" spacing={2}>
+              <Button variant="contained" onClick={handleSave} disabled={updateMutation.isPending}>
+                Guardar cambios
+              </Button>
+              {canRequestReward && (
+                <Button
+                  variant="outlined"
+                  onClick={() => requestRewardMutation.mutate()}
+                  disabled={requestRewardMutation.isPending}
+                >
+                  Solicitar recompensa
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        </Paper>
+      </Stack>
+    </AppLayout>
+  );
+}
