@@ -27,6 +27,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AppLayout from '../components/layout/AppLayout';
 import { listGoalsByChild } from '../api/goals.api';
+import { listChildren } from '../api/children.api';
+import { listChildBooks } from '../api/books.api';
 import {
   listPendingRewardRequests,
   resolveRewardRequest,
@@ -66,6 +68,17 @@ export default function RewardsPage() {
     queryFn: () => listGoalsByChild(activeRequest!.childId),
     enabled: !!activeRequest,
   });
+  // Títulos de libros de TODOS los hijos, para mostrar el título en vez de "Libro #id".
+  const childrenBooksQuery = useQuery({
+    queryKey: ['children-books-titles'],
+    queryFn: async () => {
+      const children = await listChildren();
+      const perChild = await Promise.all(children.map((c) => listChildBooks(c.id)));
+      return perChild.flat();
+    },
+  });
+  const bookTitleById = new Map((childrenBooksQuery.data ?? []).map((b) => [b.id, b.title]));
+  const bookLabel = (bookId: number) => bookTitleById.get(bookId) ?? `Libro #${bookId}`;
 
   // Al llegar desde una notificación de "recompensa pendiente de activar" (?bookId=), abre el diálogo de creación.
   useEffect(() => {
@@ -138,7 +151,7 @@ export default function RewardsPage() {
   }
 
   function handleDelete(reward: Reward) {
-    if (!window.confirm(`¿Eliminar la recompensa del libro #${reward.bookId}?`)) return;
+    if (!window.confirm(`¿Eliminar la recompensa del libro "${bookLabel(reward.bookId)}"?`)) return;
     setError(null);
     deleteMutation.mutate(reward.id);
   }
@@ -167,7 +180,7 @@ export default function RewardsPage() {
               <TableBody>
                 {requests.map((request) => (
                   <TableRow key={request.id}>
-                    <TableCell>Libro #{request.bookId}</TableCell>
+                    <TableCell>{bookLabel(request.bookId)}</TableCell>
                     <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell align="right">
                       <Button size="small" onClick={() => openCreateFromRequest(request)}>
@@ -210,7 +223,7 @@ export default function RewardsPage() {
               <TableBody>
                 {rewards.map((reward) => (
                   <TableRow key={reward.id}>
-                    <TableCell>Libro #{reward.bookId}</TableCell>
+                    <TableCell>{bookLabel(reward.bookId)}</TableCell>
                     <TableCell>{reward.type === 'POINTS' ? 'Puntos' : 'Euros'}</TableCell>
                     <TableCell>{reward.value}</TableCell>
                     <TableCell>{reward.deadline}</TableCell>
@@ -245,7 +258,7 @@ export default function RewardsPage() {
       </Stack>
 
       <Dialog open={!!activeRequest} onClose={() => setActiveRequest(null)} fullWidth maxWidth="xs">
-        <DialogTitle>Crear recompensa — Libro #{activeRequest?.bookId}</DialogTitle>
+        <DialogTitle>Crear recompensa — {activeRequest ? bookLabel(activeRequest.bookId) : ''}</DialogTitle>
         <DialogContent>
           <RewardForm
             form={form}

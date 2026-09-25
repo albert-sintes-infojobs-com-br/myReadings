@@ -320,7 +320,9 @@ export default function BooksPage() {
                           </Box>
                         )}
                         {readOnly ? (
-                          cardBody
+                          <CardActionArea onClick={() => navigate(`/books/${book.id}?childId=${selectedChildId}`)}>
+                            {cardBody}
+                          </CardActionArea>
                         ) : (
                           <CardActionArea onClick={() => navigate(`/books/${book.id}`)}>{cardBody}</CardActionArea>
                         )}
