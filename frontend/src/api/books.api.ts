@@ -22,6 +22,11 @@ export async function listBooks(filter?: ListBooksFilter): Promise<Book[]> {
   return data;
 }
 
+export async function listChildBooks(childId: number, filter?: ListBooksFilter): Promise<Book[]> {
+  const { data } = await apiClient.get<Book[]>(`/children/${childId}/books`, { params: filter });
+  return data;
+}
+
 export async function getBook(id: number): Promise<Book> {
   const { data } = await apiClient.get<Book>(`/books/${id}`);
   return data;

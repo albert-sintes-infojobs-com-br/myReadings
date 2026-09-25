@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsString, MaxLength, MinLength } from 'class-validator';
+import { Gender } from '@prisma/client';
 
 export class CreateChildDto {
   @ApiProperty({ example: 'Lola' })
@@ -16,4 +17,8 @@ export class CreateChildDto {
   @MinLength(8)
   @MaxLength(100)
   password!: string;
+
+  @ApiProperty({ enum: Gender, example: Gender.FEMALE })
+  @IsEnum(Gender)
+  gender!: Gender;
 }

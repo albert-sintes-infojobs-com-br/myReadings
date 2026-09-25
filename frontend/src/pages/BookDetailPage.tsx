@@ -17,6 +17,7 @@ import AppLayout from '../components/layout/AppLayout';
 import { useAuth } from '../auth/AuthContext';
 import { deleteBook, getBook, requestReward, updateBook, type BookInput } from '../api/books.api';
 import { listCategories } from '../api/categories.api';
+import { listMyRewardRequests } from '../api/reward-requests.api';
 import type { BookStatus } from '../types/book';
 
 const STATUS_OPTIONS: Record<BookStatus, BookStatus[]> = {
@@ -43,6 +44,11 @@ export default function BookDetailPage() {
 
   const bookQuery = useQuery({ queryKey: ['books', bookId], queryFn: () => getBook(bookId) });
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: listCategories });
+  const rewardRequestsQuery = useQuery({
+    queryKey: ['reward-requests', 'mine'],
+    queryFn: listMyRewardRequests,
+    enabled: user?.role === 'CHILD',
+  });
 
   useEffect(() => {
     if (bookQuery.data) {
@@ -83,7 +89,10 @@ export default function BookDetailPage() {
 
   const requestRewardMutation = useMutation({
     mutationFn: () => requestReward(bookId),
-    onSuccess: () => setInfo('Solicitud enviada a tu padre/madre'),
+    onSuccess: () => {
+      setInfo('Solicitud enviada a tu padre/madre');
+      queryClient.invalidateQueries({ queryKey: ['reward-requests', 'mine'] });
+    },
     onError: (err) => {
       const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
       setError(typeof message === 'string' ? message : 'No se pudo enviar la solicitud');
@@ -108,6 +117,11 @@ export default function BookDetailPage() {
   const book = bookQuery.data!;
   const categories = categoriesQuery.data ?? [];
   const canRequestReward = user?.role === 'CHILD' && book.status === 'NOT_STARTED';
+  const rewardRequest = (rewardRequestsQuery.data ?? [])
+    .filter((r) => r.bookId === bookId)
+    .sort((a, b) => b.id - a.id)[0];
+  const rewardRequestPending = rewardRequest?.status === 'PENDING';
+  const rewardRequestApproved = rewardRequest?.status === 'RESOLVED';
 
   function handleSave() {
     setError(null);
@@ -218,7 +232,12 @@ export default function BookDetailPage() {
               <Button variant="contained" onClick={handleSave} disabled={updateMutation.isPending}>
                 Guardar cambios
               </Button>
-              {canRequestReward && (
+              {canRequestReward && (rewardRequestPending || rewardRequestApproved) && (
+                <Typography variant="body2" color={rewardRequestPending ? 'text.secondary' : 'success.main'} alignSelf="center">
+                  {rewardRequestPending ? 'Solicitud pendiente' : 'Solicitud aprobada'}
+                </Typography>
+              )}
+              {canRequestReward && !rewardRequestPending && !rewardRequestApproved && (
                 <Button
                   variant="outlined"
                   onClick={() => requestRewardMutation.mutate()}

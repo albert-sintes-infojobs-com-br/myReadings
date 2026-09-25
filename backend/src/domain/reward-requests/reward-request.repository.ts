@@ -11,6 +11,8 @@ export interface RewardRequestRepository {
   findById(id: number): Promise<RewardRequest | null>;
   /** Solo `PENDING`, de libros de CUALQUIERA de los hijos de este padre. */
   listPendingByParent(parentId: number): Promise<RewardRequest[]>;
+  /** TODAS (cualquier status) las solicitudes de un hijo concreto. */
+  listByChild(childId: number): Promise<RewardRequest[]>;
   create(bookId: number, childId: number): Promise<RewardRequest>;
   resolve(
     id: number,

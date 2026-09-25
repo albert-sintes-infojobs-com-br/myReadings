@@ -1,4 +1,5 @@
 import type { SafeUser, UserRecord } from './user.entity';
+import type { Gender } from '../shared/role.types';
 
 /** Token de inyección del repo (interfaces no existen en runtime). */
 export const USER_REPOSITORY = 'USER_REPOSITORY';
@@ -7,12 +8,14 @@ export interface CreateParentInput {
   name: string;
   email: string;
   passwordHash: string;
+  gender: Gender;
 }
 
 export interface CreateChildInput {
   name: string;
   email: string;
   passwordHash: string;
+  gender: Gender;
   parentId: number;
 }
 

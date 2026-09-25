@@ -11,6 +11,8 @@ import {
   OwnershipError,
 } from '../shared/domain-errors';
 import type { ActorView } from '../shared/actor';
+import { assertOwnsChild } from '../goals/use-cases';
+import type { UserRepository } from '../users/user.repository';
 
 /**
  * Use cases de Libros (Fase 5).
@@ -123,6 +125,20 @@ export class ListBooksUseCase {
 
   async execute(actor: ActorView, filter?: BookFilter): Promise<Book[]> {
     return this.repo.listByOwner(actor.id, filter);
+  }
+}
+
+// ─────────────────────────── List (hijo, solo lectura para el padre) ───────────────────────────
+
+export class ListChildBooksUseCase {
+  constructor(
+    private readonly repo: BookRepository,
+    private readonly users: UserRepository,
+  ) {}
+
+  async execute(actor: ActorView, childId: number, filter?: BookFilter): Promise<Book[]> {
+    await assertOwnsChild(this.users, actor, childId);
+    return this.repo.listByOwner(childId, filter);
   }
 }
 

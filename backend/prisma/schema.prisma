@@ -12,6 +12,11 @@ enum Role {
   CHILD
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 enum BookStatus {
   NOT_STARTED
   READING
@@ -65,6 +70,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role
+  gender       Gender   @default(MALE)
   parentId     Int?
   parent       User?    @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
   children     User[]   @relation("ParentChild")

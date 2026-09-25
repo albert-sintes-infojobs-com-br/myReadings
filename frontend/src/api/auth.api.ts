@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AuthUser } from '../types/auth';
+import type { AuthUser, Gender } from '../types/auth';
 
 export interface LoginResponse {
   accessToken: string;
@@ -15,6 +15,7 @@ export interface RegisterInput {
   name: string;
   email: string;
   password: string;
+  gender: Gender;
 }
 
 export async function registerRequest(input: RegisterInput): Promise<AuthUser> {

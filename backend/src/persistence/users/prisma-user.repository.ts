@@ -12,6 +12,7 @@ const SAFE_SELECT = {
   name: true,
   email: true,
   role: true,
+  gender: true,
   parentId: true,
 } as const;
 
@@ -60,6 +61,7 @@ export class PrismaUserRepository implements UserRepository {
         email: input.email,
         passwordHash: input.passwordHash,
         role: 'PARENT',
+        gender: input.gender,
         parentId: null,
       },
       select: SAFE_SELECT,
@@ -74,6 +76,7 @@ export class PrismaUserRepository implements UserRepository {
         email: input.email,
         passwordHash: input.passwordHash,
         role: 'CHILD',
+        gender: input.gender,
         parentId: input.parentId,
       },
       select: SAFE_SELECT,

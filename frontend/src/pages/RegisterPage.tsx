@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Link, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { registerRequest } from '../api/auth.api';
 import { useAuth } from '../auth/AuthContext';
+import type { Gender } from '../types/auth';
 
 export default function RegisterPage() {
   const { login } = useAuth();
@@ -11,6 +12,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState<Gender>('FEMALE');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -19,7 +21,7 @@ export default function RegisterPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await registerRequest({ name, email, password });
+      await registerRequest({ name, email, password, gender });
       await login(email, password);
       navigate('/parent', { replace: true });
     } catch (err) {
@@ -54,6 +56,10 @@ export default function RegisterPage() {
             required
             helperText="Mínimo 8 caracteres"
           />
+          <TextField select label="Eres" value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
+            <MenuItem value="FEMALE">Madre</MenuItem>
+            <MenuItem value="MALE">Padre</MenuItem>
+          </TextField>
           <Button type="submit" variant="contained" disabled={submitting}>
             {submitting ? 'Creando…' : 'Crear cuenta'}
           </Button>

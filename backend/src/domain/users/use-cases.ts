@@ -1,5 +1,6 @@
 import type { SafeUser } from './user.entity';
 import type { UserRepository } from './user.repository';
+import type { Gender } from '../shared/role.types';
 import { hashPassword, verifyPassword, MIN_PASSWORD_LENGTH } from './password.util';
 import {
   AuthenticationError,
@@ -35,7 +36,7 @@ function assertPasswordLength(password: string): void {
 export class RegisterParentUseCase {
   constructor(private readonly repo: UserRepository) {}
 
-  async execute(input: { name: string; email: string; password: string }): Promise<SafeUser> {
+  async execute(input: { name: string; email: string; password: string; gender: Gender }): Promise<SafeUser> {
     assertPasswordLength(input.password);
     const existing = await this.repo.findByEmail(input.email);
     if (existing) {
@@ -45,6 +46,7 @@ export class RegisterParentUseCase {
       name: input.name,
       email: input.email,
       passwordHash: hashPassword(input.password),
+      gender: input.gender,
     });
   }
 }
@@ -97,7 +99,7 @@ export class CreateChildUseCase {
 
   async execute(
     parentId: number,
-    input: { name: string; email: string; password: string },
+    input: { name: string; email: string; password: string; gender: Gender },
   ): Promise<SafeUser> {
     assertPasswordLength(input.password);
     await assertIsParent(this.repo, parentId);
@@ -109,6 +111,7 @@ export class CreateChildUseCase {
       name: input.name,
       email: input.email,
       passwordHash: hashPassword(input.password),
+      gender: input.gender,
       parentId,
     });
   }

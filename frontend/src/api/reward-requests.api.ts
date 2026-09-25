@@ -6,6 +6,11 @@ export async function listPendingRewardRequests(): Promise<RewardRequest[]> {
   return data;
 }
 
+export async function listMyRewardRequests(): Promise<RewardRequest[]> {
+  const { data } = await apiClient.get<RewardRequest[]>('/reward-requests/mine');
+  return data;
+}
+
 export async function resolveRewardRequest(
   id: number,
   status: Extract<RewardRequestStatus, 'RESOLVED' | 'DISMISSED'>,

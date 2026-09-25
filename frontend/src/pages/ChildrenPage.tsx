@@ -9,6 +9,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -21,8 +22,9 @@ import {
 } from '@mui/material';
 import AppLayout from '../components/layout/AppLayout';
 import { createChild, listChildren, type CreateChildInput } from '../api/children.api';
+import { personLabel } from '../utils/personLabel';
 
-const EMPTY_FORM: CreateChildInput = { name: '', email: '', password: '' };
+const EMPTY_FORM: CreateChildInput = { name: '', email: '', password: '', gender: 'FEMALE' };
 
 export default function ChildrenPage() {
   const queryClient = useQueryClient();
@@ -68,6 +70,7 @@ export default function ChildrenPage() {
               <TableRow>
                 <TableCell>Nombre</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Tipo</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -75,11 +78,12 @@ export default function ChildrenPage() {
                 <TableRow key={child.id}>
                   <TableCell>{child.name}</TableCell>
                   <TableCell>{child.email}</TableCell>
+                  <TableCell>{personLabel(child.role, child.gender)}</TableCell>
                 </TableRow>
               ))}
               {children.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={2} align="center">
+                  <TableCell colSpan={3} align="center">
                     Sin hijos todavía.
                   </TableCell>
                 </TableRow>
@@ -116,6 +120,15 @@ export default function ChildrenPage() {
               required
               helperText="Mínimo 8 caracteres"
             />
+            <TextField
+              select
+              label="Es"
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value as CreateChildInput['gender'] })}
+            >
+              <MenuItem value="FEMALE">Hija</MenuItem>
+              <MenuItem value="MALE">Hijo</MenuItem>
+            </TextField>
           </Stack>
         </DialogContent>
         <DialogActions>

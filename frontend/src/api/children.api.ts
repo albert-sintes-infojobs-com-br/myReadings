@@ -1,10 +1,11 @@
 import { apiClient } from './client';
-import type { AuthUser } from '../types/auth';
+import type { AuthUser, Gender } from '../types/auth';
 
 export interface CreateChildInput {
   name: string;
   email: string;
   password: string;
+  gender: Gender;
 }
 
 export async function listChildren(): Promise<AuthUser[]> {

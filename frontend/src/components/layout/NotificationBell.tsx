@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { Badge, Box, Button, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  type NotificationDto,
 } from '../../api/notifications.api';
 
 /** Campana de notificaciones: badge con no-leídas + desplegable con la bandeja. */
 export default function NotificationBell() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const open = Boolean(anchorEl);
 
   const unreadQuery = useQuery({
@@ -42,6 +45,14 @@ export default function NotificationBell() {
 
   const notifications = listQuery.data ?? [];
 
+  function handleNotificationClick(n: NotificationDto) {
+    if (!n.read) markReadMutation.mutate(n.id);
+    setAnchorEl(null);
+    if (n.type === 'REWARD_REQUEST' && n.refBookId != null) {
+      navigate(`/rewards?bookId=${n.refBookId}`);
+    }
+  }
+
   return (
     <>
       <IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)} aria-label="Notificaciones">
@@ -66,7 +77,7 @@ export default function NotificationBell() {
         {notifications.map((n) => (
           <MenuItem
             key={n.id}
-            onClick={() => !n.read && markReadMutation.mutate(n.id)}
+            onClick={() => handleNotificationClick(n)}
             sx={{ whiteSpace: 'normal', alignItems: 'flex-start', opacity: n.read ? 0.6 : 1 }}
           >
             <Box>

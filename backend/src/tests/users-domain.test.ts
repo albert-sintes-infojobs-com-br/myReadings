@@ -33,8 +33,8 @@ function repoMock() {
   };
 }
 
-const PARENT: SafeUser = { id: 5, name: 'María', email: 'maria@test.com', role: 'PARENT', parentId: null };
-const CHILD: SafeUser = { id: 9, name: 'Lucas', email: 'lucas@test.com', role: 'CHILD', parentId: 5 };
+const PARENT: SafeUser = { id: 5, name: 'María', email: 'maria@test.com', role: 'PARENT', gender: 'FEMALE', parentId: null };
+const CHILD: SafeUser = { id: 9, name: 'Lucas', email: 'lucas@test.com', role: 'CHILD', gender: 'MALE', parentId: 5 };
 
 describe('RegisterParentUseCase', () => {
   it('crea un PARENT con hash scrypt (no texto plano)', async () => {
@@ -42,10 +42,10 @@ describe('RegisterParentUseCase', () => {
     const uc = new RegisterParentUseCase(repo as unknown as UserRepository);
     repo.findByEmail.mockResolvedValue(null);
     repo.createParent.mockImplementation((input) =>
-      Promise.resolve({ id: 10, name: input.name, email: input.email, role: 'PARENT', parentId: null }),
+      Promise.resolve({ id: 10, name: input.name, email: input.email, role: 'PARENT', gender: input.gender, parentId: null }),
     );
 
-    const user = await uc.execute({ name: 'Ana Madre', email: 'ana@test.com', password: 'supersecreta' });
+    const user = await uc.execute({ name: 'Ana Madre', email: 'ana@test.com', password: 'supersecreta', gender: 'FEMALE' });
 
     const created = repo.createParent.mock.calls[0][0];
     expect(created.passwordHash).not.toContain('supersecreta');
@@ -59,7 +59,7 @@ describe('RegisterParentUseCase', () => {
     const uc = new RegisterParentUseCase(repo as unknown as UserRepository);
     repo.findByEmail.mockResolvedValue(PARENT as unknown as UserRecord);
     await expect(
-      uc.execute({ name: 'Ana', email: 'maria@test.com', password: 'contrasena123' }),
+      uc.execute({ name: 'Ana', email: 'maria@test.com', password: 'contrasena123', gender: 'FEMALE' }),
     ).rejects.toThrow(ConflictError);
     expect(repo.createParent).not.toHaveBeenCalled();
   });
@@ -68,7 +68,7 @@ describe('RegisterParentUseCase', () => {
     const repo = repoMock();
     const uc = new RegisterParentUseCase(repo as unknown as UserRepository);
     await expect(
-      uc.execute({ name: 'Ana', email: 'ana2@test.com', password: 'cort' }),
+      uc.execute({ name: 'Ana', email: 'ana2@test.com', password: 'cort', gender: 'FEMALE' }),
     ).rejects.toThrow(DomainValidation);
     expect(repo.createParent).not.toHaveBeenCalled();
   });
@@ -150,10 +150,10 @@ describe('CreateChildUseCase (solo padre)', () => {
     repo.findById.mockResolvedValue(PARENT);
     repo.findByEmail.mockResolvedValue(null);
     repo.createChild.mockImplementation((input) =>
-      Promise.resolve({ id: 8, name: input.name, email: input.email, role: 'CHILD', parentId: input.parentId }),
+      Promise.resolve({ id: 8, name: input.name, email: input.email, role: 'CHILD', gender: input.gender, parentId: input.parentId }),
     );
 
-    const child = await uc.execute(5, { name: 'Lola', email: 'nueva@test.com', password: 'clave123' });
+    const child = await uc.execute(5, { name: 'Lola', email: 'nueva@test.com', password: 'clave123', gender: 'FEMALE' });
 
     const created = repo.createChild.mock.calls[0][0];
     expect(created.passwordHash).not.toContain('clave123');
@@ -169,7 +169,7 @@ describe('CreateChildUseCase (solo padre)', () => {
     repo.findById.mockResolvedValue(PARENT);
     repo.findByEmail.mockResolvedValue({ ...CHILD, passwordHash: 'x' });
     await expect(
-      uc.execute(5, { name: 'X', email: 'existe@test.com', password: 'clave123' }),
+      uc.execute(5, { name: 'X', email: 'existe@test.com', password: 'clave123', gender: 'MALE' }),
     ).rejects.toThrow(ConflictError);
     expect(repo.createChild).not.toHaveBeenCalled();
   });
@@ -179,7 +179,7 @@ describe('CreateChildUseCase (solo padre)', () => {
     const uc = new CreateChildUseCase(repo as unknown as UserRepository);
     repo.findById.mockResolvedValue(CHILD);
     await expect(
-      uc.execute(9, { name: 'X', email: 'y@test.com', password: 'clave123' }),
+      uc.execute(9, { name: 'X', email: 'y@test.com', password: 'clave123', gender: 'MALE' }),
     ).rejects.toThrow(OwnershipError);
   });
 
@@ -188,7 +188,7 @@ describe('CreateChildUseCase (solo padre)', () => {
     const uc = new CreateChildUseCase(repo as unknown as UserRepository);
     repo.findById.mockResolvedValue(null);
     await expect(
-      uc.execute(999, { name: 'X', email: 'z@test.com', password: 'clave123' }),
+      uc.execute(999, { name: 'X', email: 'z@test.com', password: 'clave123', gender: 'MALE' }),
     ).rejects.toThrow(DomainNotFound);
   });
 
@@ -196,7 +196,7 @@ describe('CreateChildUseCase (solo padre)', () => {
     const repo = repoMock();
     const uc = new CreateChildUseCase(repo as unknown as UserRepository);
     await expect(
-      uc.execute(5, { name: 'X', email: 'z@test.com', password: 'cort' }),
+      uc.execute(5, { name: 'X', email: 'z@test.com', password: 'cort', gender: 'MALE' }),
     ).rejects.toThrow(DomainValidation);
     expect(repo.findById).not.toHaveBeenCalled();
   });

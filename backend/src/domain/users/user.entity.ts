@@ -1,4 +1,5 @@
 import type { Role } from '../shared/role.types';
+import type { Gender } from '../shared/role.types';
 
 /**
  * Proyección segura de usuario (SIN `passwordHash`). Es lo único que
@@ -9,6 +10,7 @@ export interface SafeUser {
   name: string;
   email: string;
   role: Role;
+  gender: Gender;
   parentId: number | null;
 }
 

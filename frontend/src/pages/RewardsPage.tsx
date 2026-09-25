@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -49,6 +50,7 @@ function extractMessage(err: unknown, fallback: string): string {
 
 export default function RewardsPage() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeRequest, setActiveRequest] = useState<RewardRequest | null>(null);
   const [editing, setEditing] = useState<Reward | null>(null);
   const [form, setForm] = useState<RewardInput>(EMPTY_FORM);
@@ -64,6 +66,18 @@ export default function RewardsPage() {
     queryFn: () => listGoalsByChild(activeRequest!.childId),
     enabled: !!activeRequest,
   });
+
+  // Al llegar desde una notificación de "recompensa pendiente de activar" (?bookId=), abre el diálogo de creación.
+  useEffect(() => {
+    const bookId = searchParams.get('bookId');
+    if (!bookId || !requestsQuery.data) return;
+    const request = requestsQuery.data.find((r) => r.bookId === Number(bookId));
+    if (request) openCreateFromRequest(request);
+    setSearchParams((params) => {
+      params.delete('bookId');
+      return params;
+    }, { replace: true });
+  }, [searchParams, requestsQuery.data]);
 
   function invalidateAll() {
     queryClient.invalidateQueries({ queryKey: ['reward-requests'] });

@@ -55,6 +55,14 @@ export class ListPendingRewardRequestsUseCase {
   }
 }
 
+export class ListMyRewardRequestsUseCase {
+  constructor(private readonly requests: RewardRequestRepository) {}
+
+  async execute(actor: ActorView): Promise<RewardRequest[]> {
+    return this.requests.listByChild(actor.id);
+  }
+}
+
 export class ResolveRewardRequestUseCase {
   constructor(
     private readonly requests: RewardRequestRepository,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { BooksController } from './books.controller';
+import { ChildBooksController } from './child-books.controller';
 import { ActorResolver } from '../shared/actor-resolver';
 import { PrismaBookRepository } from '../../persistence/books/prisma-book.repository';
 import { PrismaRewardRepository } from '../../persistence/rewards/prisma-reward.repository';
@@ -12,6 +13,7 @@ import {
   DeleteBookUseCase,
   GetBookUseCase,
   ListBooksUseCase,
+  ListChildBooksUseCase,
   UpdateBookUseCase,
 } from '../../domain/books/use-cases';
 import { ResolveBookFinishedUseCase } from '../../domain/ledger/use-cases';
@@ -20,6 +22,7 @@ import { REWARD_REPOSITORY } from '../../domain/rewards/reward.repository';
 import { GOAL_REPOSITORY } from '../../domain/goals/goal.repository';
 import { LEDGER_REPOSITORY } from '../../domain/ledger/ledger.repository';
 import { NOTIFICATION_REPOSITORY } from '../../domain/notifications/notification.repository';
+import { USER_REPOSITORY } from '../../domain/users/user.repository';
 
 /**
  * Módulo de transporte (NestJS) de Libros (Fase 5).
@@ -40,7 +43,7 @@ const bookUseCases = [
 
 @Module({
   imports: [AuthModule],
-  controllers: [BooksController],
+  controllers: [BooksController, ChildBooksController],
   providers: [
     PrismaBookRepository,
     PrismaRewardRepository,
@@ -58,6 +61,11 @@ const bookUseCases = [
       useFactory: (repo: unknown) => new uc(repo as never),
       inject: [BOOK_REPOSITORY],
     })),
+    {
+      provide: ListChildBooksUseCase,
+      useFactory: (books: unknown, users: unknown) => new ListChildBooksUseCase(books as never, users as never),
+      inject: [BOOK_REPOSITORY, USER_REPOSITORY],
+    },
     {
       provide: ResolveBookFinishedUseCase,
       useFactory: (rewards: unknown, books: unknown, goals: unknown, ledger: unknown, notifications: unknown) =>

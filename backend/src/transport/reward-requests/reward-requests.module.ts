@@ -7,6 +7,7 @@ import { PrismaBookRepository } from '../../persistence/books/prisma-book.reposi
 import { PrismaNotificationRepository } from '../../persistence/notifications/prisma-notification.repository';
 import {
   CreateRewardRequestUseCase,
+  ListMyRewardRequestsUseCase,
   ListPendingRewardRequestsUseCase,
   ResolveRewardRequestUseCase,
 } from '../../domain/reward-requests/use-cases';
@@ -41,6 +42,11 @@ import { USER_REPOSITORY } from '../../domain/users/user.repository';
     {
       provide: ListPendingRewardRequestsUseCase,
       useFactory: (requests: unknown) => new ListPendingRewardRequestsUseCase(requests as never),
+      inject: [REWARD_REQUEST_REPOSITORY],
+    },
+    {
+      provide: ListMyRewardRequestsUseCase,
+      useFactory: (requests: unknown) => new ListMyRewardRequestsUseCase(requests as never),
       inject: [REWARD_REQUEST_REPOSITORY],
     },
     {

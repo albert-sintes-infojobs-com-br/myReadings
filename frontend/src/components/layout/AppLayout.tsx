@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { AppBar, Box, Button, Chip, Container, Tab, Tabs, Toolbar, Typography } from '@mui/material';
 import { useAuth } from '../../auth/AuthContext';
+import { personLabel } from '../../utils/personLabel';
 import NotificationBell from './NotificationBell';
 
 const PARENT_NAV = [
@@ -35,7 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           {user && (
             <>
               <Chip
-                label={user.role === 'PARENT' ? 'Padre/Madre' : 'Hijo/a'}
+                label={personLabel(user.role, user.gender)}
                 size="small"
                 color="secondary"
               />

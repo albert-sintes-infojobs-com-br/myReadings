@@ -42,6 +42,15 @@ export class PrismaRewardRequestRepository implements RewardRequestRepository {
     return rows.map((r) => this.toRequest(r));
   }
 
+  async listByChild(childId: number): Promise<RewardRequest[]> {
+    const rows = await this.prisma.rewardRequest.findMany({
+      where: { childId },
+      select: SELECT,
+      orderBy: { id: 'asc' },
+    });
+    return rows.map((r) => this.toRequest(r));
+  }
+
   async create(bookId: number, childId: number): Promise<RewardRequest> {
     const row = await this.prisma.rewardRequest.create({
       data: { bookId, childId, status: 'PENDING' },

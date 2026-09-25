@@ -24,13 +24,13 @@ async function main() {
   const hash = hashPassword('password123');
 
   const parent = await prisma.user.create({
-    data: { name: 'María García', email: 'maria@familia.dev', passwordHash: hash, role: 'PARENT' },
+    data: { name: 'María García', email: 'maria@familia.dev', passwordHash: hash, role: 'PARENT', gender: 'FEMALE' },
   });
   const lucas = await prisma.user.create({
-    data: { name: 'Lucas García', email: 'lucas@familia.dev', passwordHash: hash, role: 'CHILD', parentId: parent.id },
+    data: { name: 'Lucas García', email: 'lucas@familia.dev', passwordHash: hash, role: 'CHILD', gender: 'MALE', parentId: parent.id },
   });
   const anais = await prisma.user.create({
-    data: { name: 'Anaïs García', email: 'anais@familia.dev', passwordHash: hash, role: 'CHILD', parentId: parent.id },
+    data: { name: 'Anaïs García', email: 'anais@familia.dev', passwordHash: hash, role: 'CHILD', gender: 'FEMALE', parentId: parent.id },
   });
 
   // Categorías

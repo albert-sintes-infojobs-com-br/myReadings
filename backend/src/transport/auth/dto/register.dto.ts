@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsString, MaxLength, MinLength } from 'class-validator';
+import { Gender } from '@prisma/client';
 import { MIN_PASSWORD_LENGTH } from '../../../domain/users/password.util';
 
 export class RegisterDto {
@@ -17,4 +18,8 @@ export class RegisterDto {
   @MinLength(MIN_PASSWORD_LENGTH)
   @MaxLength(100)
   password!: string;
+
+  @ApiProperty({ enum: Gender, example: Gender.FEMALE })
+  @IsEnum(Gender)
+  gender!: Gender;
 }
