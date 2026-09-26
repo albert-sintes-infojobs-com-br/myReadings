@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import AppLayout from '../components/layout/AppLayout';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import { DeleteButton } from '../components/common/RowActionButtons';
 import {
   hideNotification,
@@ -22,11 +24,18 @@ export default function NotificationsPage() {
   const markReadMutation = useMutation({ mutationFn: markNotificationRead, onSuccess: invalidate });
   const markAllReadMutation = useMutation({ mutationFn: markAllNotificationsRead, onSuccess: invalidate });
   const hideMutation = useMutation({ mutationFn: hideNotification, onSuccess: invalidate });
+  const [pendingDelete, setPendingDelete] = useState<NotificationDto | null>(null);
 
   const notifications = listQuery.data ?? [];
 
   function handleClick(n: NotificationDto) {
     if (!n.read) markReadMutation.mutate(n.id);
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    hideMutation.mutate(pendingDelete.id);
+    setPendingDelete(null);
   }
 
   return (
@@ -51,7 +60,7 @@ export default function NotificationsPage() {
                   {new Date(n.createdAt).toLocaleString()}
                 </Typography>
               </Box>
-              <DeleteButton onClick={() => hideMutation.mutate(n.id)} disabled={hideMutation.isPending} />
+              <DeleteButton onClick={() => setPendingDelete(n)} disabled={hideMutation.isPending} />
             </Paper>
           ))}
           {notifications.length === 0 && (
@@ -61,6 +70,15 @@ export default function NotificationsPage() {
           )}
         </Stack>
       </Stack>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Eliminar notificación"
+        message="¿Eliminar esta notificación?"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        loading={hideMutation.isPending}
+      />
     </AppLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AppLayout from '../components/layout/AppLayout';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { useAuth } from '../auth/AuthContext';
@@ -42,6 +43,7 @@ export default function BookDetailPage() {
   const [searchParams] = useSearchParams();
   const viewChildId = searchParams.get('childId') ? Number(searchParams.get('childId')) : null;
   const readOnly = viewChildId != null;
+  const backUrl = readOnly ? `/books?viewMode=children&childId=${viewChildId}` : '/books';
   const [form, setForm] = useState<BookInput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -103,7 +105,7 @@ export default function BookDetailPage() {
     mutationFn: () => deleteBook(bookId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] });
-      navigate('/books', { replace: true });
+      navigate(backUrl, { replace: true });
     },
   });
 
@@ -170,6 +172,14 @@ export default function BookDetailPage() {
   return (
     <AppLayout>
       <Stack spacing={2}>
+        <Button
+          component={RouterLink}
+          to={backUrl}
+          startIcon={<ArrowBackIcon />}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          Volver a Libros
+        </Button>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h5">{book.title}</Typography>
           {!readOnly && (

@@ -39,10 +39,21 @@ import {
   updateReward,
   type RewardInput,
 } from '../api/rewards.api';
-import type { Reward, RewardType } from '../types/reward';
+import type { Reward, RewardStatus, RewardType } from '../types/reward';
 import type { RewardRequest } from '../types/reward-request';
 
 const EMPTY_FORM: RewardInput = { type: 'MONEY', value: 5, deadline: '' };
+
+const REWARD_STATUS_LABEL: Record<RewardStatus, string> = {
+  PENDING: 'Pendiente',
+  FULFILLED: 'Alcanzado',
+  PENALIZED: 'Penalizado',
+};
+const REWARD_STATUS_COLOR: Record<RewardStatus, 'warning' | 'success' | 'error'> = {
+  PENDING: 'warning',
+  FULFILLED: 'success',
+  PENALIZED: 'error',
+};
 
 function extractMessage(err: unknown, fallback: string): string {
   const message = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
@@ -233,7 +244,7 @@ export default function RewardsPage() {
                     <TableCell>{reward.value}</TableCell>
                     <TableCell>{reward.deadline}</TableCell>
                     <TableCell>
-                      <Chip size="small" label={reward.status} />
+                      <Chip size="small" label={REWARD_STATUS_LABEL[reward.status]} color={REWARD_STATUS_COLOR[reward.status]} />
                     </TableCell>
                     <TableCell align="right">
                       {reward.status === 'PENDING' && (

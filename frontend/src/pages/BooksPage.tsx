@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -54,12 +54,17 @@ const EMPTY_FORM: BookInput = { title: '', author: '' };
 
 export default function BooksPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isParent = user?.role === 'PARENT';
   const isChild = user?.role === 'CHILD';
-  const [viewMode, setViewMode] = useState<'mine' | 'children'>('mine');
-  const [selectedChildId, setSelectedChildId] = useState<number | ''>('');
+  const [viewMode, setViewMode] = useState<'mine' | 'children'>(
+    searchParams.get('viewMode') === 'children' ? 'children' : 'mine',
+  );
+  const [selectedChildId, setSelectedChildId] = useState<number | ''>(
+    searchParams.get('childId') ? Number(searchParams.get('childId')) : '',
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<BookInput>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +243,7 @@ export default function BooksPage() {
             {requestError}
           </Alert>
         )}
-        <Box display="flex" gap={2} alignItems="flex-start">
+        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2} alignItems={{ xs: 'stretch', sm: 'flex-start' }}>
           {COLUMNS.map((column) => {
             const columnBooks = books.filter((b) => b.status === column);
             return (
@@ -249,7 +254,7 @@ export default function BooksPage() {
                   minWidth: 0,
                   p: 1.5,
                   bgcolor: dragOverColumn === column ? 'action.hover' : 'background.paper',
-                  minHeight: 400,
+                  minHeight: { xs: 'auto', sm: 400 },
                 }}
                 onDragOver={(e) => {
                   const sourceId = Number(e.dataTransfer.getData('text/plain'));
