@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setUser(null);
     setStatus('unauthenticated');
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   }, [navigate]);
 
   // Reacciona a 401 globales (token expirado/inválido) disparados por el interceptor de axios.

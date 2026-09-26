@@ -98,10 +98,17 @@ export default function Header() {
   const nav = user ? (user.role === 'PARENT' ? PARENT_NAV : CHILD_NAV) : null;
 
   return (
-    <AppBar position="sticky" color="default" elevation={1}>
-      <Toolbar sx={{ gap: 3 }}>
+    <AppBar position="sticky" color="default" elevation={1} sx={{ width: '100%' }}>
+      <Toolbar sx={{ maxWidth: 'lg', width: '100%', mx: 'auto', gap: 3, flexWrap: 'wrap', py: 1 }}>
         <Box>
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box
+            display="flex"
+            alignItems="center"
+            gap={1}
+            component={RouterLink}
+            to="/"
+            sx={{ textDecoration: 'none', color: 'inherit' }}
+          >
             <LibraryBooksIcon color="primary" />
             <Typography variant="h6" component="span">
               MyReadings
@@ -116,7 +123,7 @@ export default function Header() {
             </Stack>
           )}
         </Box>
-        <Stack direction="row" spacing={3} flexGrow={1} justifyContent="center">
+        <Stack direction="row" spacing={3} flexGrow={1} flexWrap="wrap" justifyContent="center" rowGap={1}>
           {nav
             ? nav.map((item) => {
                 const active = location.pathname.startsWith(item.to);
