@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Box, Card, CardContent, Container, Fade, Grid, Stack, Typography } from '@mui/material';
 import Header from '../components/layout/Header';
+import AuthButtons from '../components/layout/AuthButtons';
 
 const QUOTES = [
   { text: 'Un libro es un regalo que puedes abrir una y otra vez.', author: 'Garrison Keillor' },
@@ -106,6 +107,17 @@ export default function LandingPage() {
             MyReadings
           </Typography>
           <RotatingQuotes />
+          <Box
+            mt={4}
+            display="flex"
+            justifyContent="center"
+            sx={{
+              '& .MuiButton-outlined': { color: 'inherit', borderColor: 'currentColor' },
+              '& .MuiButton-contained': { bgcolor: 'background.paper', color: 'primary.main' },
+            }}
+          >
+            <AuthButtons mode="page" loginTrigger="button" size="large" />
+          </Box>
         </Container>
       </Box>
 

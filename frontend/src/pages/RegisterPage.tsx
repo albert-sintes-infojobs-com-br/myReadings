@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Alert, Box, Button, Link, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { registerRequest } from '../api/auth.api';
 import { useAuth } from '../auth/AuthContext';
 import type { Gender } from '../types/auth';
@@ -12,6 +13,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [gender, setGender] = useState<Gender>('FEMALE');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -19,6 +21,10 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
     setSubmitting(true);
     try {
       await registerRequest({ name, email, password, gender });
@@ -36,7 +42,19 @@ export default function RegisterPage() {
     <Box display="flex" minHeight="100vh" alignItems="center" justifyContent="center" bgcolor="background.default">
       <Paper sx={{ p: 4, width: 380 }} component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
-          <Typography variant="h5" align="center">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap={1}
+            component={RouterLink}
+            to="/"
+            sx={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <LibraryBooksIcon color="primary" />
+            <Typography variant="h5">MyReadings</Typography>
+          </Box>
+          <Typography variant="h6" align="center">
             Crear cuenta (padre/madre)
           </Typography>
           {error && <Alert severity="error">{error}</Alert>}
@@ -56,11 +74,20 @@ export default function RegisterPage() {
             required
             helperText="Mínimo 8 caracteres"
           />
+          <TextField
+            label="Repite la contraseña"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            error={confirmPassword !== '' && confirmPassword !== password}
+            helperText={confirmPassword !== '' && confirmPassword !== password ? 'Las contraseñas no coinciden' : ' '}
+          />
           <TextField select label="Eres" value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
             <MenuItem value="FEMALE">Madre</MenuItem>
             <MenuItem value="MALE">Padre</MenuItem>
           </TextField>
-          <Button type="submit" variant="contained" disabled={submitting}>
+          <Button type="submit" variant="contained" disabled={submitting || password !== confirmPassword}>
             {submitting ? 'Creando…' : 'Crear cuenta'}
           </Button>
           <Typography variant="body2" align="center">

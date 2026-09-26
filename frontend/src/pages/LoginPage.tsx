@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from '@mui/material';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { useAuth } from '../auth/AuthContext';
 
 export default function LoginPage() {
@@ -29,9 +30,18 @@ export default function LoginPage() {
     <Box display="flex" minHeight="100vh" alignItems="center" justifyContent="center" bgcolor="background.default">
       <Paper sx={{ p: 4, width: 360 }} component="form" onSubmit={handleSubmit}>
         <Stack spacing={2}>
-          <Typography variant="h5" align="center">
-            MyReadings
-          </Typography>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap={1}
+            component={RouterLink}
+            to="/"
+            sx={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <LibraryBooksIcon color="primary" />
+            <Typography variant="h5">MyReadings</Typography>
+          </Box>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField
             label="Email"
