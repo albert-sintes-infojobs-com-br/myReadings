@@ -19,10 +19,12 @@ export interface CreateNotificationInput {
 export interface NotificationRepository {
   create(input: CreateNotificationInput): Promise<Notification>;
   findById(id: number): Promise<Notification | null>;
-  /** `onlyUnread` filtra a `read = false` si se indica `true`. */
+  /** `onlyUnread` filtra a `read = false` si se indica `true`. Nunca incluye `hidden`. */
   listByRecipient(recipientUserId: number, onlyUnread?: boolean): Promise<Notification[]>;
   countUnread(recipientUserId: number): Promise<number>;
   markRead(id: number): Promise<Notification>;
   /** Devuelve el número de notificaciones actualizadas. */
   markAllRead(recipientUserId: number): Promise<number>;
+  /** Borrado lógico: deja de aparecer en `listByRecipient`. */
+  hide(id: number): Promise<Notification>;
 }

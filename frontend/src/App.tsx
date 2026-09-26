@@ -12,6 +12,7 @@ import BookDetailPage from './pages/BookDetailPage';
 import ChildrenPage from './pages/ChildrenPage';
 import GoalsPage from './pages/GoalsPage';
 import RewardsPage from './pages/RewardsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -80,6 +81,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['PARENT']}>
               <RewardsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />

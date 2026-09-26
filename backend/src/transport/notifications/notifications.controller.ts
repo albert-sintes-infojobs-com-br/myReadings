@@ -1,6 +1,8 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
@@ -16,6 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
   CountUnreadNotificationsUseCase,
+  HideNotificationUseCase,
   ListMyNotificationsUseCase,
   MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
@@ -36,6 +39,7 @@ export class NotificationsController {
     private readonly countUc: CountUnreadNotificationsUseCase,
     private readonly markReadUc: MarkNotificationReadUseCase,
     private readonly markAllReadUc: MarkAllNotificationsReadUseCase,
+    private readonly hideUc: HideNotificationUseCase,
     private readonly actor: ActorResolver,
   ) {}
 
@@ -68,6 +72,18 @@ export class NotificationsController {
   ) {
     const actor = await this.actor.resolve(req.user);
     return this.markReadUc.execute(actor, id);
+  }
+
+  @Delete(':id')
+  @Roles([Role.PARENT, Role.CHILD])
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Borrado lógico de una notificación propia (deja de listarse).' })
+  async hide(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: { user: { id: number; role: string } },
+  ) {
+    const actor = await this.actor.resolve(req.user);
+    await this.hideUc.execute(actor, id);
   }
 
   @Patch('read-all')

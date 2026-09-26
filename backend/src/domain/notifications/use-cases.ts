@@ -48,3 +48,15 @@ export class MarkAllNotificationsReadUseCase {
     return this.notifications.markAllRead(actor.id);
   }
 }
+
+export class HideNotificationUseCase {
+  constructor(private readonly notifications: NotificationRepository) {}
+
+  async execute(actor: ActorView, id: number): Promise<Notification> {
+    const notification = await this.notifications.findById(id);
+    if (!notification || notification.recipientUserId !== actor.id) {
+      throw new DomainNotFound('Notificación no encontrada', 'notification');
+    }
+    return this.notifications.hide(id);
+  }
+}

@@ -36,7 +36,7 @@ describe('PrismaNotificationRepository', () => {
     prisma.notification.findMany.mockResolvedValue([baseRow]);
     await repo.listByRecipient(5, true);
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { recipientUserId: 5, read: false } }),
+      expect.objectContaining({ where: { recipientUserId: 5, hidden: false, read: false } }),
     );
   });
 
@@ -45,7 +45,7 @@ describe('PrismaNotificationRepository', () => {
     prisma.notification.findMany.mockResolvedValue([baseRow]);
     await repo.listByRecipient(5);
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { recipientUserId: 5 } }),
+      expect.objectContaining({ where: { recipientUserId: 5, hidden: false } }),
     );
   });
 

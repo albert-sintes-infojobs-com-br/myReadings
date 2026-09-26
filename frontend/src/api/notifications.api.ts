@@ -14,6 +14,7 @@ export interface NotificationDto {
   refRewardId: number | null;
   message: string;
   read: boolean;
+  hidden: boolean;
   createdAt: string;
 }
 
@@ -37,4 +38,9 @@ export async function markNotificationRead(id: number): Promise<NotificationDto>
 export async function markAllNotificationsRead(): Promise<number> {
   const { data } = await apiClient.patch<{ updated: number }>('/notifications/read-all');
   return data.updated;
+}
+
+/** Borrado lógico: deja de listarse (no se elimina el registro en BD). */
+export async function hideNotification(id: number): Promise<void> {
+  await apiClient.delete(`/notifications/${id}`);
 }

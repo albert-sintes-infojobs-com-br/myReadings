@@ -43,7 +43,7 @@ export default function NotificationBell() {
     onSuccess: invalidate,
   });
 
-  const notifications = listQuery.data ?? [];
+  const notifications = (listQuery.data ?? []).slice(0, 3);
 
   function handleNotificationClick(n: NotificationDto) {
     if (!n.read) markReadMutation.mutate(n.id);
@@ -88,6 +88,15 @@ export default function NotificationBell() {
             </Box>
           </MenuItem>
         ))}
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null);
+            navigate('/notifications');
+          }}
+        >
+          Ver todas
+        </MenuItem>
       </Menu>
     </>
   );

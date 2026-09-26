@@ -16,5 +16,6 @@ export interface Notification {
   refRewardId: number | null;
   message: string;
   read: boolean;
+  hidden: boolean;
   createdAt: Date;
 }

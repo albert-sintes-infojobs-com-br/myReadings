@@ -5,6 +5,7 @@ import { ActorResolver } from '../shared/actor-resolver';
 import { PrismaNotificationRepository } from '../../persistence/notifications/prisma-notification.repository';
 import {
   CountUnreadNotificationsUseCase,
+  HideNotificationUseCase,
   ListMyNotificationsUseCase,
   MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
@@ -17,6 +18,7 @@ const notificationUseCases = [
   CountUnreadNotificationsUseCase,
   MarkNotificationReadUseCase,
   MarkAllNotificationsReadUseCase,
+  HideNotificationUseCase,
 ];
 
 @Module({

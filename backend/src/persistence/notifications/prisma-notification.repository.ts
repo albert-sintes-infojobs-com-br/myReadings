@@ -14,6 +14,7 @@ const SELECT = {
   refRewardId: true,
   message: true,
   read: true,
+  hidden: true,
   createdAt: true,
 } as const;
 
@@ -30,6 +31,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
     refRewardId: number | null;
     message: string;
     read: boolean;
+    hidden: boolean;
     createdAt: Date;
   }): Notification {
     return { ...row, type: row.type as Notification['type'] };
@@ -56,7 +58,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
 
   async listByRecipient(recipientUserId: number, onlyUnread?: boolean): Promise<Notification[]> {
     const rows = await this.prisma.notification.findMany({
-      where: { recipientUserId, ...(onlyUnread ? { read: false } : {}) },
+      where: { recipientUserId, hidden: false, ...(onlyUnread ? { read: false } : {}) },
       select: SELECT,
       orderBy: { id: 'desc' },
     });
@@ -78,5 +80,10 @@ export class PrismaNotificationRepository implements NotificationRepository {
       data: { read: true },
     });
     return count;
+  }
+
+  async hide(id: number): Promise<Notification> {
+    const row = await this.prisma.notification.update({ where: { id }, data: { hidden: true }, select: SELECT });
+    return this.toNotification(row);
   }
 }
