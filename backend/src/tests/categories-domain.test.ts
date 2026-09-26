@@ -116,24 +116,20 @@ describe('ListCategoriesUseCase', () => {
 
     const list = await uc.execute(PARENT);
 
-    expect(repo.listByOwner).toHaveBeenCalledWith(5, undefined);
+    expect(repo.listByOwner).toHaveBeenCalledWith(5);
     expect(list).toHaveLength(1);
   });
 
-  it('el hijo ve las suyas + las de su padre (solo lectura implícita)', async () => {
+  it('el hijo ve solo las suyas (sin las del padre)', async () => {
     const repo = repoMock();
     const uc = new ListCategoriesUseCase(repo as unknown as CategoryRepository);
     const own = makeCategory({ id: 2, ownerUserId: 9, title: 'Dibujos míos' });
-    const fromParent = makeCategory({ id: 1, ownerUserId: 5 });
-    repo.listByOwner.mockResolvedValue([own, fromParent]);
+    repo.listByOwner.mockResolvedValue([own]);
 
     const list = await uc.execute(CHILD);
 
-    expect(repo.listByOwner).toHaveBeenCalledWith(9, 5);
-    expect(list.map((c) => c.id)).toEqual([2, 1]);
-    // Cada categoría expone su ownerUserId para que el cliente distinga
-    // qué puede editar.
-    expect(list.find((c) => c.id === 1)!.ownerUserId).toBe(5);
+    expect(repo.listByOwner).toHaveBeenCalledWith(9);
+    expect(list.map((c) => c.id)).toEqual([2]);
   });
 });
 

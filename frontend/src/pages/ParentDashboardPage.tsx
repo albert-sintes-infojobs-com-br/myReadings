@@ -86,7 +86,7 @@ export default function ParentDashboardPage() {
         {overview?.perChild.map((childStats) => (
           <Stack key={childStats.childId} spacing={1}>
             {childId === '' && <Typography variant="h6">{childStats.name}</Typography>}
-            <ChildStatsPanel stats={childStats} />
+            <ChildStatsPanel stats={childStats} childId={childStats.childId} />
           </Stack>
         ))}
         {overview && overview.perChild.length === 0 && (

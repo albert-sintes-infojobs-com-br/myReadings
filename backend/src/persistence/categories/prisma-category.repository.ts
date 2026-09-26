@@ -53,29 +53,13 @@ export class PrismaCategoryRepository implements CategoryRepository {
     return row ? this.toCategory(row) : null;
   }
 
-  async listByOwner(
-    ownerUserId: number,
-    parentUserId?: number,
-  ): Promise<Category[]> {
-    const ownerIds =
-      parentUserId != null ? Array.from(new Set([ownerUserId, parentUserId])) : [ownerUserId];
-
-    // Dos queries en vez de una `in`: el resultado debe tener las del
-    // propietario ANTES que las del padre (orden estable sin joins).
-    const byOwner = await this.prisma.category.findMany({
+  async listByOwner(ownerUserId: number): Promise<Category[]> {
+    const rows = await this.prisma.category.findMany({
       where: { ownerUserId },
       select: PrismaCategoryRepository.SELECT,
       orderBy: { id: 'asc' },
     });
-    const extras =
-      parentUserId != null && parentUserId !== ownerUserId
-        ? await this.prisma.category.findMany({
-            where: { ownerUserId: parentUserId },
-            select: PrismaCategoryRepository.SELECT,
-            orderBy: { id: 'asc' },
-          })
-        : [];
-    return [...byOwner, ...extras].map((r) => this.toCategory(r));
+    return rows.map((r) => this.toCategory(r));
   }
 
   async create(

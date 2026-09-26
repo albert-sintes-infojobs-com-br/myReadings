@@ -23,7 +23,6 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AppLayout from '../components/layout/AppLayout';
-import { useAuth } from '../auth/AuthContext';
 import {
   createCategory,
   deleteCategory,
@@ -36,7 +35,6 @@ import type { Category } from '../types/category';
 const EMPTY_FORM: CategoryInput = { title: '', colorHex: '#3f51b5', description: '' };
 
 export default function CategoriesPage() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -132,41 +130,39 @@ export default function CategoriesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {categories.map((category) => {
-                const isMine = category.ownerUserId === user?.id;
-                return (
-                  <TableRow key={category.id}>
-                    <TableCell>
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          bgcolor: category.colorHex,
-                          border: '1px solid rgba(0,0,0,0.2)',
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {category.title} {!isMine && <Typography component="span" variant="caption" color="text.secondary">(de tu padre/madre)</Typography>}
-                    </TableCell>
-                    <TableCell>{category.description ?? '—'}</TableCell>
-                    <TableCell align="right">
-                      {isMine && (
-                        <>
-                          <IconButton size="small" onClick={() => openEdit(category)} aria-label="Editar">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" onClick={() => handleDelete(category)} aria-label="Eliminar">
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {categories.length === 0 && (
+              {categories.map((category) => (
+                <TableRow key={category.id}>
+                  <TableCell>
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        bgcolor: category.colorHex,
+                        border: '1px solid rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>{category.title}</TableCell>
+                  <TableCell>{category.description ?? '—'}</TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" onClick={() => openEdit(category)} aria-label="Editar">
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => handleDelete(category)} aria-label="Eliminar">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {categoriesQuery.isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    Cargando…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!categoriesQuery.isLoading && categories.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} align="center">
                     Sin categorías todavía.

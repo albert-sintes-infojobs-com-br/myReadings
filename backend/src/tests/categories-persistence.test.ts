@@ -52,7 +52,7 @@ describe('PrismaCategoryRepository', () => {
     );
   });
 
-  it('listByOwner sin parent: una query solo del owner', async () => {
+  it('listByOwner: una query solo del owner', async () => {
     setup();
     prisma.category.findMany.mockResolvedValue([baseRow]);
 
@@ -63,22 +63,6 @@ describe('PrismaCategoryRepository', () => {
       expect.objectContaining({ where: { ownerUserId: 5 } }),
     );
     expect(list).toEqual([baseRow]);
-  });
-
-  it('listByOwner con parent: propias primero, luego las del padre', async () => {
-    setup();
-    const ownRow = { ...baseRow, ownerUserId: 9, id: 201 };
-    prisma.category.findMany
-      .mockResolvedValueOnce([ownRow])
-      .mockResolvedValueOnce([baseRow]);
-
-    const list = await repo.listByOwner(9, 5);
-
-    expect(list.map((c) => c.id)).toEqual([201, 101]);
-    expect(prisma.category.findMany).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ where: { ownerUserId: 9 } }),
-    );
   });
 
   it('create persiste con el ownerUserId del input', async () => {

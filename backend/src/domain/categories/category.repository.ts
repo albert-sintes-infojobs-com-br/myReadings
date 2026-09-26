@@ -17,8 +17,8 @@ export const CATEGORY_REPOSITORY = 'CATEGORY_REPOSITORY';
  */
 export interface CategoryRepository {
   findById(id: number, ownerUserId: number): Promise<Category | null>;
-  /** Devuelve SOLO las categorías cuyo owner es `ownerUserId` (o, si `parentUserId` se pasa, también las del padre). */
-  listByOwner(ownerUserId: number, parentUserId?: number): Promise<Category[]>;
+  /** Devuelve SOLO las categorías cuyo owner es `ownerUserId`. */
+  listByOwner(ownerUserId: number): Promise<Category[]>;
   create(input: CreateCategoryInput, ownerUserId: number): Promise<Category>;
   /** Devuelve el estado tras actualizar. */
   update(id: number, ownerUserId: number, patch: UpdateCategoryInput): Promise<Category>;

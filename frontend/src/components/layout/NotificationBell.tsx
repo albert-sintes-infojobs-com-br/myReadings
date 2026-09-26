@@ -55,8 +55,21 @@ export default function NotificationBell() {
 
   return (
     <>
-      <IconButton color="inherit" onClick={(e) => setAnchorEl(e.currentTarget)} aria-label="Notificaciones">
-        <Badge badgeContent={unreadQuery.data ?? 0} color="error">
+      <IconButton
+        color="inherit"
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        aria-label="Notificaciones"
+        sx={{
+          borderRadius: 3,
+          color: '#475569',
+          '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+        }}
+      >
+        <Badge
+          variant="dot"
+          invisible={!unreadQuery.data}
+          sx={{ '& .MuiBadge-dot': { bgcolor: '#fbbf24', outline: '2px solid #fff' } }}
+        >
           <NotificationsIcon />
         </Badge>
       </IconButton>

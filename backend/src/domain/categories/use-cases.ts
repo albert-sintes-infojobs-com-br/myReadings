@@ -74,14 +74,9 @@ export class CreateCategoryUseCase {
 export class ListCategoriesUseCase {
   constructor(private readonly repo: CategoryRepository) {}
 
-  /**
-   * - Padre: ve las suyas.
-   * - Hijo: ve las suyas + las de su padre (solo lectura; el cliente usa
-   *   `ownerUserId` para saber cuáles puede editar).
-   */
+  /** Cada actor ve SOLO sus propias categorías (padre e hijo, sin vista cruzada). */
   async execute(actor: ActorView): Promise<Category[]> {
-    const parentUserId = actor.role === 'CHILD' ? actor.parentId ?? undefined : undefined;
-    return this.repo.listByOwner(actor.id, parentUserId);
+    return this.repo.listByOwner(actor.id);
   }
 }
 
@@ -91,16 +86,8 @@ export class GetCategoryUseCase {
   constructor(private readonly repo: CategoryRepository) {}
 
   async execute(actor: ActorView, id: number): Promise<Category> {
-    // Un actor ve una categoría si es su propietariO o, siendo hijo, es del padre.
-    let category = await this.repo.findById(id, actor.id);
-    let visible = category !== null;
-
-    if (!visible && actor.role === 'CHILD' && actor.parentId != null) {
-      category = await this.repo.findById(id, actor.parentId);
-      visible = category !== null;
-    }
-
-    if (!visible || !category) {
+    const category = await this.repo.findById(id, actor.id);
+    if (!category) {
       throw new DomainNotFound('Categoría no encontrada', 'category');
     }
     return category;
