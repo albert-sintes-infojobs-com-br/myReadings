@@ -46,25 +46,35 @@ const STATUS_LABEL: Record<GoalStatus, string> = {
 
 export default function GoalsPage() {
   const queryClient = useQueryClient();
-  const [childId, setChildId] = useState<number | ''>('');
+  const [childFilter, setChildFilter] = useState<number | ''>('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeChildId, setActiveChildId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Goal | null>(null);
   const [form, setForm] = useState<GoalInput>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
 
   const childrenQuery = useQuery({ queryKey: ['children'], queryFn: listChildren });
+  const children = childrenQuery.data ?? [];
+  const childIds = children.map((c) => c.id);
+
   const goalsQuery = useQuery({
-    queryKey: ['goals', childId],
-    queryFn: () => listGoalsByChild(childId as number),
-    enabled: childId !== '',
+    queryKey: ['goals', 'by-child', childIds],
+    queryFn: async () => {
+      const perChild = await Promise.all(childIds.map((id) => listGoalsByChild(id)));
+      const map = new Map<number, Goal[]>();
+      childIds.forEach((id, i) => map.set(id, perChild[i]));
+      return map;
+    },
+    enabled: childIds.length > 0,
   });
+  const goalsByChild = goalsQuery.data ?? new Map<number, Goal[]>();
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['goals', childId] });
+    queryClient.invalidateQueries({ queryKey: ['goals', 'by-child'] });
   }
 
   const createMutation = useMutation({
-    mutationFn: (input: GoalInput) => createGoal(childId as number, input),
+    mutationFn: (input: GoalInput) => createGoal(activeChildId as number, input),
     onSuccess: () => {
       invalidate();
       setDialogOpen(false);
@@ -95,7 +105,8 @@ export default function GoalsPage() {
     return typeof message === 'string' ? message : fallback;
   }
 
-  function openCreate() {
+  function openCreate(forChildId: number) {
+    setActiveChildId(forChildId);
     setEditing(null);
     setForm(EMPTY_FORM);
     setError(null);
@@ -125,27 +136,23 @@ export default function GoalsPage() {
     deleteMutation.mutate(goal.id);
   }
 
-  const children = childrenQuery.data ?? [];
-  const goals = goalsQuery.data ?? [];
+  const visibleChildren = childFilter === '' ? children : children.filter((c) => c.id === childFilter);
 
   return (
     <AppLayout>
       <Stack spacing={2}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h5">Metas</Typography>
-          <Button variant="contained" onClick={openCreate} disabled={childId === ''}>
-            Nueva meta
-          </Button>
         </Box>
         <TextField
           select
           label="Hijo/a"
-          value={childId}
-          onChange={(e) => setChildId(e.target.value ? Number(e.target.value) : '')}
+          value={childFilter}
+          onChange={(e) => setChildFilter(e.target.value ? Number(e.target.value) : '')}
           sx={{ width: 260 }}
           size="small"
         >
-          <MenuItem value="">Selecciona un hijo/a</MenuItem>
+          <MenuItem value="">Todos</MenuItem>
           {children.map((child) => (
             <MenuItem key={child.id} value={child.id}>
               {child.name}
@@ -153,54 +160,68 @@ export default function GoalsPage() {
           ))}
         </TextField>
         {error && <Alert severity="error">{error}</Alert>}
-        {childId !== '' && (
-          <Paper>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nombre</TableCell>
-                  <TableCell>Objetivo (puntos)</TableCell>
-                  <TableCell>Estado</TableCell>
-                  <TableCell align="right">Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {goals.map((goal) => (
-                  <TableRow key={goal.id}>
-                    <TableCell>{goal.name}</TableCell>
-                    <TableCell>{goal.targetPoints}</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={STATUS_LABEL[goal.status]} />
-                    </TableCell>
-                    <TableCell align="right">
-                      {goal.status === 'ACTIVE' && (
-                        <>
-                          <IconButton size="small" onClick={() => openEdit(goal)} aria-label="Editar">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" onClick={() => handleDelete(goal)} aria-label="Eliminar">
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </>
-                      )}
-                      {goal.status === 'ACHIEVED' && (
-                        <Button size="small" onClick={() => redeemMutation.mutate(goal.id)}>
-                          Canjear
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {goals.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      Sin metas todavía.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Paper>
+        {visibleChildren.map((child) => {
+          const goals = goalsByChild.get(child.id) ?? [];
+          return (
+            <Box key={child.id}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography variant="h6">{child.name}</Typography>
+                <Button variant="contained" size="small" onClick={() => openCreate(child.id)}>
+                  Nueva meta
+                </Button>
+              </Box>
+              <Paper>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Nombre</TableCell>
+                      <TableCell>Objetivo (puntos)</TableCell>
+                      <TableCell>Estado</TableCell>
+                      <TableCell align="right">Acciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {goals.map((goal) => (
+                      <TableRow key={goal.id}>
+                        <TableCell>{goal.name}</TableCell>
+                        <TableCell>{goal.targetPoints}</TableCell>
+                        <TableCell>
+                          <Chip size="small" label={STATUS_LABEL[goal.status]} />
+                        </TableCell>
+                        <TableCell align="right">
+                          {goal.status === 'ACTIVE' && (
+                            <>
+                              <IconButton size="small" onClick={() => openEdit(goal)} aria-label="Editar">
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => handleDelete(goal)} aria-label="Eliminar">
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </>
+                          )}
+                          {goal.status === 'ACHIEVED' && (
+                            <Button size="small" onClick={() => redeemMutation.mutate(goal.id)}>
+                              Canjear
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {goals.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center">
+                          Sin metas todavía.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Paper>
+            </Box>
+          );
+        })}
+        {visibleChildren.length === 0 && (
+          <Alert severity="info">Todavía no tienes hijos vinculados.</Alert>
         )}
       </Stack>
 

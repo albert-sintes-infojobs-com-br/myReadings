@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Alert,
   AppBar,
   Box,
   Button,
+  Chip,
   Link,
   MenuItem,
   Popover,
@@ -17,17 +18,37 @@ import {
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { useAuth } from '../../auth/AuthContext';
 import { registerRequest } from '../../api/auth.api';
+import { personLabel } from '../../utils/personLabel';
 import type { Gender } from '../../types/auth';
+import NotificationBell from './NotificationBell';
 
-const SECTIONS = [
+const LANDING_SECTIONS = [
   { href: '#objetivo', label: 'Objetivo' },
   { href: '#funcionalidades', label: 'Funcionalidades' },
   { href: '#como-funciona', label: 'Cómo funciona' },
 ];
 
-export default function LandingHeader() {
-  const { user, login } = useAuth();
+const PARENT_NAV = [
+  { to: '/parent', label: 'Dashboard' },
+  { to: '/books', label: 'Libros' },
+  { to: '/categories', label: 'Categorías' },
+  { to: '/children', label: 'Hijos' },
+  { to: '/goals', label: 'Metas' },
+  { to: '/rewards', label: 'Recompensas' },
+];
+
+const CHILD_NAV = [
+  { to: '/child', label: 'Dashboard' },
+  { to: '/books', label: 'Libros' },
+  { to: '/categories', label: 'Categorías' },
+];
+
+/** Encabezado único de la app: misma barra en landing y páginas autenticadas, cambiando el submenú central. */
+export default function Header() {
+  const { user, login, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [loginAnchorEl, setLoginAnchorEl] = useState<HTMLElement | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,29 +95,57 @@ export default function LandingHeader() {
     }
   }
 
+  const nav = user ? (user.role === 'PARENT' ? PARENT_NAV : CHILD_NAV) : null;
+
   return (
     <AppBar position="sticky" color="default" elevation={1}>
       <Toolbar sx={{ gap: 3 }}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <LibraryBooksIcon color="primary" />
-          <Typography variant="h6" component="span">
-            MyReadings
-          </Typography>
+        <Box>
+          <Box display="flex" alignItems="center" gap={1}>
+            <LibraryBooksIcon color="primary" />
+            <Typography variant="h6" component="span">
+              MyReadings
+            </Typography>
+          </Box>
+          {user && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="caption" color="text.secondary">
+                {user.name}
+              </Typography>
+              <Chip label={personLabel(user.role, user.gender)} size="small" color="secondary" />
+            </Stack>
+          )}
         </Box>
         <Stack direction="row" spacing={3} flexGrow={1} justifyContent="center">
-          {SECTIONS.map((section) => (
-            <Link key={section.href} href={section.href} underline="hover" color="inherit">
-              {section.label}
-            </Link>
-          ))}
+          {nav
+            ? nav.map((item) => {
+                const active = location.pathname.startsWith(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    component={RouterLink}
+                    to={item.to}
+                    underline="hover"
+                    color={active ? 'primary' : 'inherit'}
+                    fontWeight={active ? 'bold' : 'normal'}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })
+            : LANDING_SECTIONS.map((section) => (
+                <Link key={section.href} href={section.href} underline="hover" color="inherit">
+                  {section.label}
+                </Link>
+              ))}
         </Stack>
         {user ? (
-          <Button
-            variant="contained"
-            onClick={() => navigate(user.role === 'PARENT' ? '/parent' : '/child')}
-          >
-            Ir a mi panel
-          </Button>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <NotificationBell />
+            <Button variant="contained" onClick={logout}>
+              Salir
+            </Button>
+          </Stack>
         ) : (
           <Stack direction="row" spacing={1} alignItems="center">
             <Link component="button" underline="hover" onClick={(e) => setLoginAnchorEl(e.currentTarget)}>

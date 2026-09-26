@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Box, Card, CardContent, Container, Fade, Grid, Stack, Typography } from '@mui/material';
-import LandingHeader from '../components/landing/LandingHeader';
+import Header from '../components/layout/Header';
 
 const QUOTES = [
   { text: 'Un libro es un regalo que puedes abrir una y otra vez.', author: 'Garrison Keillor' },
@@ -8,6 +8,15 @@ const QUOTES = [
   { text: 'El que ama la lectura, tiene todo bajo su alcance.', author: 'William Godwin' },
   { text: 'Un niño que lee, será un adulto que piensa.', author: 'Anónimo' },
   { text: 'Leer es soñar con los ojos abiertos.', author: 'Anónimo' },
+  { text: 'La lectura nos abre las puertas del mundo que te atrevas a imaginar.', author: 'Anónimo' },
+  { text: 'Un lector vive mil vidas antes de morir. El que nunca lee solo vive una.', author: 'George R.R. Martin' },
+  { text: 'Si no te gusta leer, no has encontrado el libro correcto.', author: 'J.K. Rowling' },
+  { text: 'Cuanto más lees, más cosas sabrás. Cuantas más cosas aprendas, a más lugares viajarás.', author: 'Dr. Seuss' },
+  {
+    text: 'Un libro abierto es un cerebro que habla; cerrado, un amigo que espera; olvidado, un alma que perdona; destruido, un corazón que llora.',
+    author: 'Proverbio hindú',
+  },
+  { text: 'Hay más tesoros en los libros que en todo el botín de los piratas de la Isla del Tesoro.', author: 'Walt Disney' },
 ];
 
 const FEATURES = [
@@ -89,7 +98,7 @@ function RotatingQuotes() {
 export default function LandingPage() {
   return (
     <Box bgcolor="background.default" minHeight="100vh">
-      <LandingHeader />
+      <Header />
 
       <Box id="inicio" bgcolor="primary.main" color="primary.contrastText" py={10}>
         <Container maxWidth="md">
