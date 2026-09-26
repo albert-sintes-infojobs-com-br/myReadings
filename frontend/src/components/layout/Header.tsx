@@ -1,15 +1,23 @@
+import { useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Box,
   Button,
   Chip,
+  Container,
+  Divider,
+  Drawer,
+  IconButton,
   Link,
   Stack,
   Toolbar,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useAuth } from '../../auth/AuthContext';
 import { personLabel } from '../../utils/personLabel';
 import NotificationBell from './NotificationBell';
@@ -40,26 +48,106 @@ const CHILD_NAV = [
 export default function Header() {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const nav = user ? (user.role === 'PARENT' ? PARENT_NAV : CHILD_NAV) : null;
 
-  return (
-    <AppBar position="sticky" color="default" elevation={1} sx={{ width: '100%' }}>
-      <Toolbar sx={{ maxWidth: 'lg', width: '100%', mx: 'auto', gap: 3, flexWrap: 'wrap', py: 1 }}>
-        <Box>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={1}
+  const logo = (
+    <Box
+      display="flex"
+      alignItems="center"
+      gap={1}
+      component={RouterLink}
+      to="/"
+      sx={{ textDecoration: 'none', color: 'inherit' }}
+    >
+      <LibraryBooksIcon color="primary" />
+      <Typography variant="h6" component="span">
+        MyReadings
+      </Typography>
+    </Box>
+  );
+
+  const navLinks = nav
+    ? nav.map((item) => {
+        const active = location.pathname.startsWith(item.to);
+        return (
+          <Link
+            key={item.to}
             component={RouterLink}
-            to="/"
-            sx={{ textDecoration: 'none', color: 'inherit' }}
+            to={item.to}
+            underline="hover"
+            color={active ? 'primary' : 'inherit'}
+            fontWeight={active ? 'bold' : 'normal'}
+            onClick={() => setDrawerOpen(false)}
           >
-            <LibraryBooksIcon color="primary" />
-            <Typography variant="h6" component="span">
-              MyReadings
-            </Typography>
-          </Box>
+            {item.label}
+          </Link>
+        );
+      })
+    : LANDING_SECTIONS.map((section) => (
+        <Link
+          key={section.href}
+          href={section.href}
+          underline="hover"
+          color="inherit"
+          onClick={() => setDrawerOpen(false)}
+        >
+          {section.label}
+        </Link>
+      ));
+
+  if (isMobile) {
+    return (
+      <AppBar position="sticky" color="default" elevation={1}>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          {logo}
+          <IconButton aria-label="Abrir menú" onClick={() => setDrawerOpen(true)}>
+            <MenuIcon />
+          </IconButton>
+        </Toolbar>
+        <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          <Stack spacing={2} sx={{ width: 260, p: 2 }}>
+            {user && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="body2">{user.name}</Typography>
+                <Chip label={personLabel(user.role, user.gender)} size="small" color="secondary" />
+              </Stack>
+            )}
+            <Stack spacing={1.5}>{navLinks}</Stack>
+            <Divider />
+            {user ? (
+              <Stack spacing={1.5} alignItems="flex-start">
+                <NotificationBell />
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    logout();
+                  }}
+                >
+                  Salir
+                </Button>
+              </Stack>
+            ) : (
+              <Stack spacing={1.5} alignItems="stretch">
+                <AuthButtons mode="page" />
+              </Stack>
+            )}
+          </Stack>
+        </Drawer>
+      </AppBar>
+    );
+  }
+
+  return (
+    <AppBar position="sticky" color="default" elevation={1}>
+      <Toolbar component={Container} maxWidth="lg" sx={{ gap: 3, flexWrap: 'wrap', py: 1 }}>
+        <Box>
+          {logo}
           {user && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="caption" color="text.secondary">
@@ -70,27 +158,7 @@ export default function Header() {
           )}
         </Box>
         <Stack direction="row" spacing={3} flexGrow={1} flexWrap="wrap" justifyContent="center" rowGap={1}>
-          {nav
-            ? nav.map((item) => {
-                const active = location.pathname.startsWith(item.to);
-                return (
-                  <Link
-                    key={item.to}
-                    component={RouterLink}
-                    to={item.to}
-                    underline="hover"
-                    color={active ? 'primary' : 'inherit'}
-                    fontWeight={active ? 'bold' : 'normal'}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })
-            : LANDING_SECTIONS.map((section) => (
-                <Link key={section.href} href={section.href} underline="hover" color="inherit">
-                  {section.label}
-                </Link>
-              ))}
+          {navLinks}
         </Stack>
         {user ? (
           <Stack direction="row" spacing={1} alignItems="center">
