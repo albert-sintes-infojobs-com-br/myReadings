@@ -11,7 +11,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   MenuItem,
   Paper,
   Stack,
@@ -23,9 +22,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import AppLayout from '../components/layout/AppLayout';
+import { EditButton, DeleteButton } from '../components/common/RowActionButtons';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import { listGoalsByChild } from '../api/goals.api';
 import { listChildren } from '../api/children.api';
 import { listChildBooks } from '../api/books.api';
@@ -57,6 +56,7 @@ export default function RewardsPage() {
   const [editing, setEditing] = useState<Reward | null>(null);
   const [form, setForm] = useState<RewardInput>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Reward | null>(null);
 
   const requestsQuery = useQuery({
     queryKey: ['reward-requests'],
@@ -151,9 +151,14 @@ export default function RewardsPage() {
   }
 
   function handleDelete(reward: Reward) {
-    if (!window.confirm(`¿Eliminar la recompensa del libro "${bookLabel(reward.bookId)}"?`)) return;
     setError(null);
-    deleteMutation.mutate(reward.id);
+    setPendingDelete(reward);
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    deleteMutation.mutate(pendingDelete.id);
+    setPendingDelete(null);
   }
 
   const requests = requestsQuery.data ?? [];
@@ -233,12 +238,8 @@ export default function RewardsPage() {
                     <TableCell align="right">
                       {reward.status === 'PENDING' && (
                         <>
-                          <IconButton size="small" onClick={() => openEdit(reward)} aria-label="Editar">
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton size="small" onClick={() => handleDelete(reward)} aria-label="Eliminar">
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                          <EditButton onClick={() => openEdit(reward)} />
+                          <DeleteButton onClick={() => handleDelete(reward)} />
                         </>
                       )}
                     </TableCell>
@@ -300,6 +301,15 @@ export default function RewardsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Eliminar recompensa"
+        message={pendingDelete ? `¿Eliminar la recompensa del libro "${bookLabel(pendingDelete.bookId)}"?` : ''}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        loading={deleteMutation.isPending}
+      />
     </AppLayout>
   );
 }

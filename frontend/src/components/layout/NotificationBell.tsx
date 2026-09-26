@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Badge, Box, Button, Divider, IconButton, Menu, MenuItem, Typography } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import { Badge, Box, Button, Divider, IconButton, Menu, MenuItem, Tooltip, Typography } from '@mui/material';
+import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -55,24 +55,27 @@ export default function NotificationBell() {
 
   return (
     <>
-      <IconButton
-        color="inherit"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        aria-label="Notificaciones"
-        sx={{
-          borderRadius: 3,
-          color: '#475569',
-          '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
-        }}
-      >
-        <Badge
-          variant="dot"
-          invisible={!unreadQuery.data}
-          sx={{ '& .MuiBadge-dot': { bgcolor: '#fbbf24', outline: '2px solid #fff' } }}
+      <Tooltip title="Notificaciones">
+        <IconButton
+          color="inherit"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          aria-label="Notificaciones"
+          sx={{
+            borderRadius: 3,
+            color: '#475569',
+            '&:hover': { bgcolor: '#f1f5f9', color: '#0f172a' },
+          }}
         >
-          <NotificationsIcon />
-        </Badge>
-      </IconButton>
+          <Badge
+            variant="dot"
+            invisible={!unreadQuery.data}
+            sx={{ '& .MuiBadge-dot': { bgcolor: '#fbbf24', outline: '2px solid #fff' } }}
+          >
+            <NotificationsNoneOutlinedIcon />
+          </Badge>
+        </IconButton>
+      </Tooltip>
+
       <Menu
         anchorEl={anchorEl}
         open={open}

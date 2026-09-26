@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Box, Button, IconButton, Paper, Stack, Typography } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import AppLayout from '../components/layout/AppLayout';
+import { DeleteButton } from '../components/common/RowActionButtons';
 import {
   hideNotification,
   listNotifications,
@@ -51,14 +51,7 @@ export default function NotificationsPage() {
                   {new Date(n.createdAt).toLocaleString()}
                 </Typography>
               </Box>
-              <IconButton
-                size="small"
-                aria-label="Eliminar"
-                onClick={() => hideMutation.mutate(n.id)}
-                disabled={hideMutation.isPending}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+              <DeleteButton onClick={() => hideMutation.mutate(n.id)} disabled={hideMutation.isPending} />
             </Paper>
           ))}
           {notifications.length === 0 && (

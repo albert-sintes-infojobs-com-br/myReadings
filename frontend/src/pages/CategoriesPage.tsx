@@ -9,7 +9,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   Paper,
   Stack,
   Table,
@@ -20,9 +19,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AppLayout from '../components/layout/AppLayout';
+import { EditButton, DeleteButton } from '../components/common/RowActionButtons';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import {
   createCategory,
   deleteCategory,
@@ -40,6 +39,7 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState<CategoryInput>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
 
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: listCategories });
 
@@ -102,9 +102,14 @@ export default function CategoriesPage() {
   }
 
   function handleDelete(category: Category) {
-    if (!window.confirm(`¿Eliminar la categoría "${category.title}"?`)) return;
     setError(null);
-    deleteMutation.mutate(category.id);
+    setPendingDelete(category);
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    deleteMutation.mutate(pendingDelete.id);
+    setPendingDelete(null);
   }
 
   const categories = categoriesQuery.data ?? [];
@@ -146,12 +151,8 @@ export default function CategoriesPage() {
                   <TableCell>{category.title}</TableCell>
                   <TableCell>{category.description ?? '—'}</TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => openEdit(category)} aria-label="Editar">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDelete(category)} aria-label="Eliminar">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <EditButton onClick={() => openEdit(category)} />
+                    <DeleteButton onClick={() => handleDelete(category)} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -212,6 +213,15 @@ export default function CategoriesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Eliminar categoría"
+        message={`¿Eliminar la categoría "${pendingDelete?.title}"?`}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        loading={deleteMutation.isPending}
+      />
     </AppLayout>
   );
 }

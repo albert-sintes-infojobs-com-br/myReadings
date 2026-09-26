@@ -10,7 +10,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   MenuItem,
   Paper,
   Stack,
@@ -22,9 +21,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AppLayout from '../components/layout/AppLayout';
+import { EditButton, DeleteButton } from '../components/common/RowActionButtons';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import { listChildren } from '../api/children.api';
 import {
   createGoal,
@@ -52,6 +51,7 @@ export default function GoalsPage() {
   const [editing, setEditing] = useState<Goal | null>(null);
   const [form, setForm] = useState<GoalInput>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Goal | null>(null);
 
   const childrenQuery = useQuery({ queryKey: ['children'], queryFn: listChildren });
   const children = childrenQuery.data ?? [];
@@ -131,9 +131,14 @@ export default function GoalsPage() {
   }
 
   function handleDelete(goal: Goal) {
-    if (!window.confirm(`¿Eliminar la meta "${goal.name}"?`)) return;
     setError(null);
-    deleteMutation.mutate(goal.id);
+    setPendingDelete(goal);
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    deleteMutation.mutate(pendingDelete.id);
+    setPendingDelete(null);
   }
 
   const visibleChildren = childFilter === '' ? children : children.filter((c) => c.id === childFilter);
@@ -191,12 +196,8 @@ export default function GoalsPage() {
                         <TableCell align="right">
                           {goal.status === 'ACTIVE' && (
                             <>
-                              <IconButton size="small" onClick={() => openEdit(goal)} aria-label="Editar">
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton size="small" onClick={() => handleDelete(goal)} aria-label="Eliminar">
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
+                              <EditButton onClick={() => openEdit(goal)} />
+                              <DeleteButton onClick={() => handleDelete(goal)} />
                             </>
                           )}
                           {goal.status === 'ACHIEVED' && (
@@ -264,6 +265,15 @@ export default function GoalsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Eliminar meta"
+        message={`¿Eliminar la meta "${pendingDelete?.name}"?`}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+        loading={deleteMutation.isPending}
+      />
     </AppLayout>
   );
 }

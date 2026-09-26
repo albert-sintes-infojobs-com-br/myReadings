@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import AppLayout from '../components/layout/AppLayout';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import { useAuth } from '../auth/AuthContext';
 import { deleteBook, getBook, listChildBooks, requestReward, updateBook, type BookInput } from '../api/books.api';
 import { listCategories } from '../api/categories.api';
@@ -44,6 +45,7 @@ export default function BookDetailPage() {
   const [form, setForm] = useState<BookInput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const ownBookQuery = useQuery({
     queryKey: ['books', bookId],
@@ -157,7 +159,11 @@ export default function BookDetailPage() {
   }
 
   function handleDelete() {
-    if (!window.confirm(`¿Eliminar el libro "${book.title}"?`)) return;
+    setConfirmDeleteOpen(true);
+  }
+
+  function confirmDelete() {
+    setConfirmDeleteOpen(false);
     deleteMutation.mutate();
   }
 
@@ -284,6 +290,15 @@ export default function BookDetailPage() {
           </Stack>
         </Paper>
       </Stack>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Eliminar libro"
+        message={`¿Eliminar el libro "${book.title}"?`}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDeleteOpen(false)}
+        loading={deleteMutation.isPending}
+      />
     </AppLayout>
   );
 }
