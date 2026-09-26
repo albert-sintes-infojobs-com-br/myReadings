@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import ProtectedRoute from './auth/ProtectedRoute';
-import RoleHomeRedirect from './auth/RoleHomeRedirect';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ParentDashboardPage from './pages/ParentDashboardPage';
@@ -83,14 +83,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <RoleHomeRedirect />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<LandingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
