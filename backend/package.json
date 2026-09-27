@@ -8,6 +8,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
+    "postinstall": "node scripts/run-prisma.js generate",
     "prisma:generate": "node scripts/run-prisma.js generate",
     "prisma:migrate": "node scripts/run-prisma.js migrate dev",
     "prisma:deploy": "node scripts/run-prisma.js migrate deploy",
