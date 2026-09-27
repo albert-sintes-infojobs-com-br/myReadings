@@ -1,8 +1,21 @@
-# MyReadings
+# 📚 MyReadings
 
 Aplicación web de gestión de libros/lecturas con recompensas familiares (TFM).
 
-## Stack tecnológico
+## 📖 a. Descripción general
+
+**MyReadings** convierte la lectura en una aventura familiar: los padres/madres
+incentivan la lectura de sus hijos mediante un sistema de **recompensas** (en puntos
+o euros) asociadas a la finalización de libros dentro de un plazo, con **metas
+canjeables** (p. ej. 1000 puntos = una consola) y **penalizaciones** por incumplimiento.
+
+Dos roles:
+- **Padre/Madre**: gestiona las cuentas de sus hijos, crea metas y recompensas sobre
+  sus libros, y ve un dashboard general filtrable por hijo.
+- **Hijo/Hija**: gestiona sus propios libros y categorías, solicita recompensas y ve
+  su propio dashboard con su progreso y saldo.
+
+## 🛠️ b. Stack tecnológico
 
 ### Backend
 | Tecnología | Versión | Uso |
@@ -55,21 +68,9 @@ Modelo completo (idéntico en ambos motores) en
 | [Docker Compose](https://docs.docker.com/compose/) | `db` + `backend` + `frontend` (Nginx) |
 | Nginx | Sirve el frontend estático y proxy de `/api` |
 
-## Documentación
+## 🌐 c. Instalación y ejecución
 
-Ver [`docs/`](docs/) para el diseño completo: visión, modelo de datos, reglas de
-negocio, arquitectura, plan de fases, API y dashboards.
-
-## Estructura
-
-```
-├── backend/    # API NestJS + Prisma
-├── frontend/   # SPA React + Vite
-├── docs/       # documentación del proyecto
-└── docker-compose.yml
-```
-
-## Puesta en marcha (Docker)
+### Opción 1 — Docker (recomendado)
 
 ```bash
 # Por defecto: Postgres
@@ -89,7 +90,7 @@ Servicios:
 > migraciones del motor activo (`backend/prisma/postgresql/migrations/` o
 > `backend/prisma/mysql/migrations/`).
 
-## Desarrollo
+### Opción 2 — Desarrollo local
 
 ```bash
 # Instalar dependencias del monorepo
@@ -114,3 +115,45 @@ Requisito de desarrollo: una instancia de Postgres o MySQL/MariaDB accesible, la
 variable `DB_PROVIDER` (`postgresql` por defecto o `mysql`) y `DATABASE_URL` en
 `backend/.env` (usa `backend/.env.example` como plantilla). Al cambiar de motor hay
 que regenerar el cliente de Prisma: `DB_PROVIDER=mysql npm run prisma:generate`.
+
+## 🗂️ d. Estructura del proyecto
+
+```
+├── backend/    # API NestJS + Prisma (domain/persistence/transport)
+├── frontend/   # SPA React + Vite
+├── docs/       # documentación del proyecto (visión, modelo de datos, API...)
+└── docker-compose.yml
+```
+
+Ver [`docs/`](docs/) para el diseño completo: visión, modelo de datos, reglas de
+negocio, arquitectura, plan de fases, API y dashboards.
+
+## ✨ e. Funcionalidades principales
+
+- 👨‍👩‍👧 **Perfiles familiares**: cuentas independientes para padres/madres (gestores) e
+  hijos (lectores).
+- 📗 **Gestión de libros**: alta y seguimiento con estado (sin empezar / leyendo /
+  finalizado), fechas, notas, puntuación y categoría (tablero Kanban).
+- 🏷️ **Categorías**: organización de libros por género o temática, con color identificativo.
+- 🎁 **Metas y recompensas**: recompensas en puntos o euros con fecha límite,
+  penalizaciones por incumplimiento, y metas canjeables por hijo.
+- 🙋 **Solicitud de recompensa (hijo → padre)**: el hijo solicita recompensa sobre un
+  libro sin empezar; el padre/madre la activa.
+- 🔔 **Notificaciones in-app**: bandeja de notificaciones (solicitudes, recompensas
+  cumplidas/penalizadas, metas alcanzadas).
+- 📊 **Dashboards y estadísticas**: progreso de metas, libros por estado, recompensas
+  por estado y tiempo medio de lectura; el padre puede filtrar por hijo.
+- ⏰ **Motor de resolución automático**: tarea programada diaria que resuelve
+  recompensas vencidas (cumplida/penalizada).
+
+## 🔑 f. Usuario y contraseña de prueba
+
+Tras ejecutar `npm run prisma:seed` (o al arrancar por Docker, que aplica el mismo seed),
+quedan disponibles estas cuentas de prueba:
+
+| Rol | Email | Contraseña |
+|-----|-------|-------------|
+| Padre/Madre | `maria@familia.dev` | `password123` |
+| Hijo | `lucas@familia.dev` | `password123` |
+| Hija | `anais@familia.dev` | `password123` |
+
