@@ -19,6 +19,10 @@
       }
     },
     {
+      "source": "/((?!api|assets|favicon.ico|vite.svg|index.html).*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "service": "frontend"
