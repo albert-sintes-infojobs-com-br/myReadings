@@ -17,5 +17,5 @@ documentación de diseño e implementación.
 ## Resumen del stack
 - **Frontend**: React + Vite + TypeScript, MUI, TanStack Query.
 - **Backend**: NestJS + Prisma, JWT, `@nestjs/schedule`.
-- **Base de datos**: MySQL/MariaDB.
+- **Base de datos**: PostgreSQL (por defecto) o MySQL/MariaDB, seleccionable con `DB_PROVIDER`.
 - **Despliegue**: Docker Compose.

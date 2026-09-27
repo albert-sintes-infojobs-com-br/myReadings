@@ -7,7 +7,7 @@
 | Frontend | React + Vite + TypeScript, React Router, TanStack Query, Axios, MUI, gráficos (Recharts / MUI X Charts) |
 | Backend | Node.js + NestJS (TypeScript) |
 | ORM | Prisma (alternativa: TypeORM) |
-| Base de datos | MySQL / MariaDB |
+| Base de datos | PostgreSQL (por defecto) o MySQL/MariaDB, seleccionable con `DB_PROVIDER` |
 | Autenticación | JWT (access token) + guards de rol |
 | Tareas programadas | `@nestjs/schedule` (resolución de recompensas) |
 | Contenedores | Docker + Docker Compose |
@@ -310,7 +310,7 @@ TFM_MyReadings/
 
 | Servicio | Descripción |
 |----------|-------------|
-| `db` | MySQL/MariaDB con volumen persistente |
+| `db` | PostgreSQL (por defecto) o MariaDB/MySQL con volumen persistente, según `DB_PROVIDER` |
 | `backend` | API NestJS; ejecuta migraciones Prisma al arrancar |
 | `frontend` | SPA servida (build de Vite tras un proxy/servidor estático) |
 

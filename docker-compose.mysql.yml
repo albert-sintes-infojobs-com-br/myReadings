@@ -1,0 +1,35 @@
+# Override para levantar MariaDB/MySQL en vez de Postgres (que es el motor por
+# defecto en docker-compose.yml). Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.mysql.yml up -d --build
+#
+# Nota: la imagen de "backend" empaqueta el cliente de Prisma generado para UN
+# solo motor (DB_PROVIDER es un build arg) — por eso este override también
+# reconstruye "backend" con DB_PROVIDER=mysql, no solo cambia el DATABASE_URL.
+services:
+  db:
+    image: mariadb:11
+    environment: !override
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: myreadings
+      MARIADB_USER: myreadings
+      MARIADB_PASSWORD: myreadings
+    ports: !override
+      - "13306:3306"
+    volumes: !override
+      - db_data_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      args:
+        DB_PROVIDER: mysql
+    environment:
+      DB_PROVIDER: mysql
+      DATABASE_URL: "mysql://myreadings:myreadings@db:3306/myreadings?schema=public"
+
+volumes:
+  db_data_mysql:

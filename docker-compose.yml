@@ -1,19 +1,18 @@
 services:
   db:
-    image: mariadb:11
+    image: postgres:16-alpine
     container_name: myreadings-db
     restart: unless-stopped
     environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: myreadings
-      MARIADB_USER: myreadings
-      MARIADB_PASSWORD: myreadings
+      POSTGRES_DB: myreadings
+      POSTGRES_USER: myreadings
+      POSTGRES_PASSWORD: myreadings
     ports:
-      - "13306:3306"
+      - "15432:5432"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U myreadings -d myreadings"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,10 +21,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        DB_PROVIDER: postgresql
     container_name: myreadings-backend
     restart: unless-stopped
     env_file:
       - ./backend/.env.example
+    environment:
+      DB_PROVIDER: postgresql
+      DATABASE_URL: "postgresql://myreadings:myreadings@db:5432/myreadings?schema=public"
     depends_on:
       db:
         condition: service_healthy
@@ -44,4 +48,4 @@ services:
       - "4173:80"
 
 volumes:
-  db_data:
+  db_data_postgres:

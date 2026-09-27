@@ -48,7 +48,7 @@ con **metas canjeables** y **penalizaciones** por incumplimiento.
 - Notificaciones **in-app** (bandeja en el área de usuario).
 - Flujo de solicitud de recompensa hijo → padre.
 - Dashboards con estadísticas por rol.
-- Despliegue con Docker (MySQL/MariaDB + backend + frontend).
+- Despliegue con Docker (PostgreSQL/MySQL + backend + frontend).
 
 ### Excluido (fuera del MVP)
 - Integración con APIs externas de libros (ISBN, portadas): alta manual únicamente.
