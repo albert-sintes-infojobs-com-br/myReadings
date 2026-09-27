@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "backend/index.js": {
+      "includeFiles": "backend/dist/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
