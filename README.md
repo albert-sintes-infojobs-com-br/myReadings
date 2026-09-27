@@ -2,7 +2,7 @@
 
 Aplicación web de gestión de libros/lecturas con recompensas familiares (TFM).
 
-## 📖 a. Descripción general
+## 📖 Descripción general
 
 **MyReadings** convierte la lectura en una aventura familiar: los padres/madres
 incentivan la lectura de sus hijos mediante un sistema de **recompensas** (en puntos
@@ -15,7 +15,7 @@ Dos roles:
 - **Hijo/Hija**: gestiona sus propios libros y categorías, solicita recompensas y ve
   su propio dashboard con su progreso y saldo.
 
-## 🛠️ b. Stack tecnológico
+## 🛠️ Stack tecnológico
 
 ### Backend
 | Tecnología | Versión | Uso |
@@ -68,7 +68,7 @@ Modelo completo (idéntico en ambos motores) en
 | [Docker Compose](https://docs.docker.com/compose/) | `db` + `backend` + `frontend` (Nginx) |
 | Nginx | Sirve el frontend estático y proxy de `/api` |
 
-## 🌐 c. Instalación y ejecución
+## 🌐 Instalación y ejecución
 
 ### Opción 1 — Docker (recomendado)
 
@@ -116,7 +116,7 @@ variable `DB_PROVIDER` (`postgresql` por defecto o `mysql`) y `DATABASE_URL` en
 `backend/.env` (usa `backend/.env.example` como plantilla). Al cambiar de motor hay
 que regenerar el cliente de Prisma: `DB_PROVIDER=mysql npm run prisma:generate`.
 
-## 🗂️ d. Estructura del proyecto
+## 🗂️ Estructura del proyecto
 
 ```
 ├── backend/    # API NestJS + Prisma (domain/persistence/transport)
@@ -128,7 +128,7 @@ que regenerar el cliente de Prisma: `DB_PROVIDER=mysql npm run prisma:generate`.
 Ver [`docs/`](docs/) para el diseño completo: visión, modelo de datos, reglas de
 negocio, arquitectura, plan de fases, API y dashboards.
 
-## ✨ e. Funcionalidades principales
+## ✨ Funcionalidades principales
 
 - 👨‍👩‍👧 **Perfiles familiares**: cuentas independientes para padres/madres (gestores) e
   hijos (lectores).
@@ -146,7 +146,7 @@ negocio, arquitectura, plan de fases, API y dashboards.
 - ⏰ **Motor de resolución automático**: tarea programada diaria que resuelve
   recompensas vencidas (cumplida/penalizada).
 
-## 🔑 f. Usuario y contraseña de prueba
+## 🔑 Usuario y contraseña de prueba
 
 Tras ejecutar `npm run prisma:seed` (o al arrancar por Docker, que aplica el mismo seed),
 quedan disponibles estas cuentas de prueba:
