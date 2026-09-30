@@ -157,3 +157,25 @@ quedan disponibles estas cuentas de prueba:
 | Hijo | `lucas@familia.dev` | `password123` |
 | Hija | `anais@familia.dev` | `password123` |
 
+## 🚀 Despliegue (Demo)
+
+El proyecto está desplegado en los servicios gratuitos de Vercel para su demostración.
+
+| Servicio | URL                                        |
+|----------|--------------------------------------------|
+|Frontend  |   https://my-readings-bice.vercel.app/     |
+|Backend   |   https://my-readings-bice.vercel.app/api  |
+
+Base de datos alojada en Neon. Storage en el propio Verel
+
+### Credenciales de pruebas
+
+| Usuario | Email              | Password | Rol       |
+|---------|--------------------|----------|-----------|
+| Albert  | alberttfm@tfm.com  | pwd12345 | PARENT    |
+| Pedro   | pedro@tfm.com      | pwd12345 | CHILDREN  |
+| Maria   | maria@tfm.com      | pwd12345 | CHILDREN  |
+| Juan    | juan@tfm.com       | pwd12345 | CHILDREN  |
+
+> Nota: se ha utilizado `vercel.json` para que el backend y el frontend puedan convivir en Vercel, ejecutándose el backend como una función serverless.
+
