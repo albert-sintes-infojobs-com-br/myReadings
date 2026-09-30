@@ -166,7 +166,7 @@ El proyecto está desplegado en los servicios gratuitos de Vercel para su demost
 |Frontend  |   https://my-readings-bice.vercel.app/     |
 |Backend   |   https://my-readings-bice.vercel.app/api  |
 
-Base de datos alojada en Neon. Storage en el propio Verel
+Base de datos alojada en Neon. Storage en el propio Vercel
 
 ### Credenciales de pruebas
 
